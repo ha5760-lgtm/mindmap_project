@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowledge Atlas — Youngmin's Dashboard Library</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #07080d;
+    --bg-1: #0c0e16;
+    --bg-2: #131726;
+    --surface: rgba(20, 24, 40, 0.72);
+    --surface-2: rgba(28, 33, 52, 0.85);
+    --border: rgba(148, 163, 184, 0.10);
+    --border-strong: rgba(148, 163, 184, 0.18);
+    --text-1: #f1f5f9;
+    --text-2: #cbd5e1;
+    --text-3: #94a3b8;
+    --text-4: #64748b;
+    --accent-blue: #60a5fa;
+    --accent-purple: #c084fc;
+    --accent-green: #4ade80;
+    --accent-amber: #fbbf24;
+    --shadow-lg: 0 24px 60px -12px rgba(0,0,0,0.7), 0 8px 24px -6px rgba(0,0,0,0.5);
+    --font-sans: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: var(--bg-0); color: var(--text-1);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden; height: 100vh; width: 100vw;
+  }
+
+  #app {
+    position: relative; width: 100vw; height: 100vh; overflow: hidden;
+    background:
+      radial-gradient(1200px 800px at 20% -10%, rgba(96,165,250,0.08), transparent 60%),
+      radial-gradient(900px 600px at 90% 110%, rgba(192,132,252,0.07), transparent 60%),
+      radial-gradient(700px 500px at 50% 50%, rgba(74,222,128,0.04), transparent 60%),
+      var(--bg-0);
+  }
+
+  /* Top Bar */
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 100;
+    display: flex; align-items: center; padding: 0 20px; gap: 16px;
+    background: linear-gradient(180deg, rgba(7,8,13,0.92), rgba(7,8,13,0.65));
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(135deg, #60a5fa, #c084fc);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px -4px rgba(96,165,250,0.5); position: relative;
+  }
+  .brand-mark::after {
+    content: ''; position: absolute; inset: 1px; border-radius: 7px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  }
+  .brand-mark svg { width: 16px; height: 16px; color: #0a0e1a; position: relative; z-index: 1; }
+  .brand-name { font-weight: 700; font-size: 14px; letter-spacing: -0.01em; color: var(--text-1); }
+  .brand-sub { font-size: 11px; color: var(--text-4); margin-left: 2px; font-weight: 500; }
+  .brand-divider { width: 1px; height: 18px; background: var(--border-strong); margin: 0 4px; }
+  .crumb { font-size: 12.5px; color: var(--text-3); font-weight: 500; }
+  .crumb b { color: var(--text-1); font-weight: 600; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px; background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border); border-radius: 999px;
+    font-size: 11.5px; font-weight: 500; color: var(--text-2); line-height: 1;
+  }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+  .pill-num { color: var(--accent-blue); font-variant-numeric: tabular-nums; font-weight: 600; }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    color: var(--text-3); display: inline-flex; align-items: center;
+    justify-content: center; cursor: pointer; transition: all 0.15s ease;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.09); color: var(--text-1); border-color: var(--border-strong); }
+  .icon-btn svg { width: 15px; height: 15px; }
+
+  /* Sidebar */
+  #sidebar {
+    position: fixed; left: 16px; top: 76px; bottom: 76px; width: 240px; z-index: 60;
+    background: var(--surface);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+  }
+  .side-title {
+    font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-4); padding: 4px 8px;
+  }
+  .side-section { display: flex; flex-direction: column; gap: 4px; }
+  .side-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 10px; cursor: pointer;
+    transition: background 0.15s; font-size: 13px; color: var(--text-2);
+    border: 1px solid transparent;
+  }
+  .side-item:hover { background: rgba(255,255,255,0.04); color: var(--text-1); }
+  .side-item.active { background: rgba(96,165,250,0.1); color: var(--text-1); border-color: rgba(96,165,250,0.18); }
+  .side-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .side-count {
+    margin-left: auto; font-size: 11px; color: var(--text-4);
+    font-variant-numeric: tabular-nums; background: rgba(255,255,255,0.04);
+    padding: 2px 7px; border-radius: 10px; font-weight: 500;
+  }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    padding: 10px; border-radius: 10px;
+  }
+  .stat-label {
+    font-size: 10px; color: var(--text-4); text-transform: uppercase;
+    letter-spacing: 0.06em; font-weight: 600; margin-bottom: 3px;
+  }
+  .stat-value {
+    font-size: 17px; font-weight: 700; color: var(--text-1);
+    font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  }
+  .stat-value .unit { font-size: 10px; color: var(--text-4); margin-left: 2px; font-weight: 500; }
+
+  /* Canvas */
+  #canvas-container { position: absolute; inset: 0; cursor: grab; }
+  #canvas-container.grabbing { cursor: grabbing; }
+  svg#mindmap { width: 100%; height: 100%; display: block; }
+  /* IMPORTANT: Do NOT apply CSS `transform` on .leaf-node — it would override
+     the SVG `transform="translate(x,y)"` attribute and cause the node to jump
+     to (0,0)-scaled position on hover. Hover feedback uses circle radius/opacity. */
+  .leaf-node circle.bg, .leaf-node circle.halo { transition: r 0.18s ease, opacity 0.18s ease; }
+
+  /* Bottom Bar */
+  #bottombar {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 50;
+    display: flex; align-items: center; gap: 4px; padding: 6px;
+    background: var(--surface);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+  }
+  .ctl-btn {
+    height: 34px; min-width: 34px; padding: 0 10px;
+    border-radius: 9px; background: transparent; border: none;
+    color: var(--text-3); font-size: 13px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; transition: all 0.15s;
+  }
+  .ctl-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-1); }
+  .ctl-btn svg { width: 15px; height: 15px; }
+  .ctl-divider { width: 1px; height: 18px; background: var(--border-strong); margin: 0 2px; }
+  .zoom-display {
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--text-3);
+    padding: 0 8px; font-variant-numeric: tabular-nums;
+    min-width: 48px; text-align: center;
+  }
+
+  /* Tooltip */
+  #tooltip {
+    position: fixed; z-index: 200;
+    background: rgba(15, 18, 30, 0.96); border: 1px solid var(--border-strong);
+    backdrop-filter: blur(12px); border-radius: 10px;
+    padding: 10px 12px; font-size: 12px; pointer-events: none; display: none;
+    max-width: 240px; box-shadow: var(--shadow-lg);
+    transform: translate(8px, -50%);
+  }
+  #tooltip .tt-title { font-weight: 600; color: var(--text-1); margin-bottom: 3px; }
+  #tooltip .tt-desc { color: var(--text-3); font-size: 11.5px; line-height: 1.5; }
+  #tooltip .tt-meta {
+    display: flex; gap: 8px; margin-top: 6px; font-size: 10.5px;
+    color: var(--text-4); font-family: var(--font-mono);
+  }
+
+  /* Mobile Frame Popup */
+  #popup-backdrop {
+    position: fixed; inset: 0; z-index: 150;
+    background: rgba(7, 8, 13, 0.55);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  }
+  #popup-backdrop.open { opacity: 1; pointer-events: auto; }
+
+  .phone {
+    position: fixed; z-index: 160; width: 380px; height: 720px;
+    border-radius: 38px;
+    background: linear-gradient(180deg, #1a1d2a, #0f1119);
+    padding: 12px 10px 14px;
+    box-shadow:
+      0 0 0 1.5px rgba(255,255,255,0.06),
+      0 0 0 8px rgba(20,22,32,0.8),
+      0 0 0 9.5px rgba(255,255,255,0.04),
+      0 36px 80px -20px rgba(0,0,0,0.85),
+      0 12px 32px -8px rgba(0,0,0,0.6);
+    transform-origin: var(--anchor-x, 50%) var(--anchor-y, 50%);
+    transform: scale(0.6); opacity: 0;
+    transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.34, 1.4, 0.64, 1);
+    pointer-events: none; display: flex; flex-direction: column;
+  }
+  .phone.open { opacity: 1; transform: scale(1); pointer-events: auto; }
+
+  .phone-screen {
+    flex: 1; border-radius: 28px; overflow: hidden;
+    background: #0f172a; position: relative;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  .phone-status {
+    position: absolute; top: 0; left: 0; right: 0; height: 36px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px; z-index: 4; pointer-events: none;
+    color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .phone-status .time { letter-spacing: -0.01em; }
+  .phone-status .right { display: flex; align-items: center; gap: 5px; }
+  .phone-notch {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 28px; background: #000; border-radius: 22px;
+    z-index: 5; pointer-events: none;
+  }
+  .phone-iframe {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    border: 0; background: #0f172a; padding-top: 36px;
+  }
+  .phone-iframe-loading {
+    position: absolute; inset: 36px 0 0 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; color: var(--text-3); background: #0f172a; z-index: 3;
+  }
+  .phone-iframe-loading.hidden { display: none; }
+  .phone-iframe-loading .spinner {
+    width: 36px; height: 36px;
+    border: 2.5px solid rgba(96,165,250,0.15);
+    border-top-color: #60a5fa; border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .phone-tab {
+    position: absolute; top: -56px; left: 12px; right: 12px; height: 44px;
+    background: var(--surface-2); backdrop-filter: blur(20px);
+    border: 1px solid var(--border-strong); border-radius: 12px;
+    display: flex; align-items: center; padding: 0 8px 0 14px; gap: 8px;
+    box-shadow: var(--shadow-lg);
+  }
+  .phone-tab .tab-cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .phone-tab .tab-title {
+    font-size: 13px; font-weight: 600; color: var(--text-1); flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.01em;
+  }
+  .phone-tab .tab-icon-btn {
+    width: 30px; height: 30px; border: none;
+    background: rgba(255,255,255,0.04); color: var(--text-3);
+    border-radius: 8px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .phone-tab .tab-icon-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-1); }
+  .phone-tab .tab-icon-btn svg { width: 14px; height: 14px; }
+
+  .phone-meta {
+    position: absolute; bottom: -52px; left: 12px; right: 12px;
+    display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;
+  }
+  .phone-meta .chip {
+    font-size: 10.5px; color: var(--text-3);
+    background: var(--surface-2); backdrop-filter: blur(16px);
+    border: 1px solid var(--border); padding: 4px 9px; border-radius: 999px;
+    font-weight: 500; font-family: var(--font-mono); letter-spacing: -0.01em;
+  }
+  .phone-meta .chip b { color: var(--text-1); font-weight: 600; }
+
+  /* Hint */
+  #hint {
+    position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 30;
+    background: var(--surface); backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 7px 14px 7px 12px; font-size: 12px; color: var(--text-3);
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 24px -10px rgba(0,0,0,0.4);
+    transition: opacity 0.4s, transform 0.4s;
+  }
+  #hint.hidden { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(-8px); }
+  #hint .kbd {
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border-strong);
+    color: var(--text-2); font-family: var(--font-mono);
+    font-size: 10.5px; padding: 2px 6px; border-radius: 5px; font-weight: 500;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.18); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.3); }
+
+  @media (max-width: 900px) { #sidebar { display: none; } }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <header id="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <circle cx="5" cy="5" r="2"/>
+          <circle cx="19" cy="5" r="2"/>
+          <circle cx="5" cy="19" r="2"/>
+          <circle cx="19" cy="19" r="2"/>
+          <path d="M7 7l3 3M14 14l3 3M14 10l3-3M7 17l3-3"/>
+        </svg>
+      </div>
+      <span class="brand-name">Knowledge Atlas</span>
+      <span class="brand-sub">v2</span>
+    </div>
+    <div class="brand-divider"></div>
+    <div class="crumb">Workspace · <b>Youngmin</b> · Dashboard Library</div>
+    <div class="top-right">
+      <span class="pill"><span class="dot"></span>Live · <span class="pill-num">8</span> dashboards</span>
+      <button class="icon-btn" id="btn-help" title="키보드 단축키">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <aside id="sidebar">
+    <div class="side-title">Categories</div>
+    <div class="side-section" id="cat-filter">
+      <div class="side-item active" data-cat="all">
+        <span class="side-dot" style="background:#cbd5e1"></span>전체 보기
+        <span class="side-count">8</span>
+      </div>
+      <div class="side-item" data-cat="cat-semi">
+        <span class="side-dot" style="background:#60a5fa"></span>반도체 · 광학
+        <span class="side-count">3</span>
+      </div>
+      <div class="side-item" data-cat="cat-invest">
+        <span class="side-dot" style="background:#c084fc"></span>투자 · 분석
+        <span class="side-count">4</span>
+      </div>
+      <div class="side-item" data-cat="cat-ai">
+        <span class="side-dot" style="background:#4ade80"></span>AI · 기술
+        <span class="side-count">1</span>
+      </div>
+    </div>
+
+    <div class="side-title" style="margin-top:6px">Library Stats</div>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-label">Files</div><div class="stat-value">8</div></div>
+      <div class="stat"><div class="stat-label">Lines</div><div class="stat-value">6.2<span class="unit">K</span></div></div>
+      <div class="stat"><div class="stat-label">Size</div><div class="stat-value">348<span class="unit">KB</span></div></div>
+      <div class="stat"><div class="stat-label">Tags</div><div class="stat-value">25</div></div>
+    </div>
+
+    <div class="side-title" style="margin-top:6px">Top by Size</div>
+    <div class="side-section" id="recent-list"></div>
+  </aside>
+
+  <div id="hint">
+    <span>노드를 클릭하면 미리보기가 열립니다</span>
+    <span class="kbd">Esc</span>
+    <span style="opacity:.5">닫기</span>
+  </div>
+
+  <div id="canvas-container">
+    <svg id="mindmap" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow-soft" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="6" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <linearGradient id="cat-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1e40af"/>
+        </linearGradient>
+        <linearGradient id="cat-purple" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#a855f7"/><stop offset="100%" stop-color="#6b21a8"/>
+        </linearGradient>
+        <linearGradient id="cat-green" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#047857"/>
+        </linearGradient>
+        <radialGradient id="center-grad" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#475569"/>
+          <stop offset="60%" stop-color="#1e293b"/>
+          <stop offset="100%" stop-color="#0f172a"/>
+        </radialGradient>
+        <linearGradient id="leaf-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="rgba(96,165,250,0.18)"/>
+          <stop offset="100%" stop-color="rgba(30,64,175,0.14)"/>
+        </linearGradient>
+        <linearGradient id="leaf-purple" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="rgba(192,132,252,0.18)"/>
+          <stop offset="100%" stop-color="rgba(107,33,168,0.14)"/>
+        </linearGradient>
+        <linearGradient id="leaf-green" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="rgba(74,222,128,0.18)"/>
+          <stop offset="100%" stop-color="rgba(4,120,87,0.14)"/>
+        </linearGradient>
+      </defs>
+
+      <g id="grid-pattern" opacity="0.5"></g>
+      <g id="graph-group">
+        <g id="edges-layer"></g>
+        <g id="nodes-layer"></g>
+      </g>
+    </svg>
+  </div>
+
+  <div id="bottombar">
+    <button class="ctl-btn" id="btn-zoom-out" title="축소">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <span class="zoom-display" id="zoom-display">100%</span>
+    <button class="ctl-btn" id="btn-zoom-in" title="확대">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <span class="ctl-divider"></span>
+    <button class="ctl-btn" id="btn-fit" title="화면에 맞추기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V3h4M21 7V3h-4M3 17v4h4M21 17v4h-4"/></svg>
+      <span>Fit</span>
+    </button>
+    <button class="ctl-btn" id="btn-reset" title="초기화">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    </button>
+  </div>
+
+  <div id="tooltip"></div>
+
+  <div id="popup-backdrop"></div>
+  <div class="phone" id="phone">
+    <div class="phone-tab">
+      <span class="tab-cat-dot" id="tab-dot"></span>
+      <span class="tab-title" id="tab-title">—</span>
+      <button class="tab-icon-btn" id="tab-refresh" title="새로고침">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+      </button>
+      <button class="tab-icon-btn" id="tab-expand" title="새 탭에서 열기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+      </button>
+      <button class="tab-icon-btn" id="tab-close" title="닫기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="phone-screen">
+      <div class="phone-notch"></div>
+      <div class="phone-status">
+        <span class="time" id="phone-time">9:41</span>
+        <span class="right">
+          <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 1h2v9h-2z"/></svg>
+          <svg width="22" height="11" viewBox="0 0 22 11" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="18" height="10" rx="2"/><rect x="2" y="2" width="14" height="7" rx="1" fill="currentColor"/><rect x="19.5" y="3.5" width="2" height="4" rx="0.5" fill="currentColor"/></svg>
+        </span>
+      </div>
+      <div class="phone-iframe-loading" id="iframe-loading">
+        <div class="spinner"></div>
+        <div style="font-size:12px">JSX 컴포넌트 로드 중…</div>
+      </div>
+      <iframe class="phone-iframe" id="phone-iframe" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+    <div class="phone-meta" id="phone-meta"></div>
+  </div>
+
+</div>
+
+<script id="jsx-data" type="application/json">__JSX_SOURCES_PLACEHOLDER__</script>
+
+<script>
+window.JSX_SOURCES = JSON.parse(document.getElementById('jsx-data').textContent);
+
+// ============== DATA ==============
+const NODES = [
+  { id: 'center', type: 'center', label: 'Knowledge\nAtlas', x: 0, y: 0, r: 64 },
+  { id: 'cat-semi',   type: 'category', label: '반도체\n광학', color: '#60a5fa', gradient: 'url(#cat-blue)',   x: -360, y: -130, r: 50 },
+  { id: 'cat-invest', type: 'category', label: '투자\n분석',   color: '#c084fc', gradient: 'url(#cat-purple)', x:    0, y: -340, r: 50 },
+  { id: 'cat-ai',     type: 'category', label: 'AI\n기술',     color: '#4ade80', gradient: 'url(#cat-green)',  x:  360, y: -130, r: 50 },
+
+  { id: 'interferometer', type: 'leaf', category: 'cat-semi', color: '#60a5fa', gradient: 'url(#leaf-blue)',
+    label: 'Interferometer\nComparison',
+    topic: '마이켈슨-몰리 vs 헤테로다인 간섭계 — 원리 및 ASML 적용 비교',
+    file: 'InterferometerComparison.jsx', lines: 527, chars: 30256,
+    tags: ['interferometer','michelson','heterodyne','ASML','optics'],
+    x: -600, y: -300, r: 42 },
+  { id: 'heterodyne', type: 'leaf', category: 'cat-semi', color: '#60a5fa', gradient: 'url(#leaf-blue)',
+    label: 'Heterodyne\nDeep Dive',
+    topic: '헤테로다인 간섭계 심층 분석 — 비트 신호, 도플러, 검출 방식',
+    file: 'mindmap_HeterodyneDeepDive.jsx', lines: 713, chars: 39256,
+    tags: ['heterodyne','interferometer','ASML','metrology'],
+    x: -640, y:  -60, r: 42 },
+  { id: 'grating', type: 'leaf', category: 'cat-semi', color: '#60a5fa', gradient: 'url(#leaf-blue)',
+    label: 'Grating Encoder\nDeep Dive',
+    topic: '격자 인코더 — EUV 리소그래피의 초정밀 위치 계측',
+    file: 'mindmap_GratingEncoderDeepDive.jsx', lines: 1043, chars: 63773,
+    tags: ['grating','EUV','ASML','metrology','semiconductor'],
+    x: -520, y: 170, r: 46 },
+
+  { id: 'asml', type: 'leaf', category: 'cat-invest', color: '#c084fc', gradient: 'url(#leaf-purple)',
+    label: 'ASML\nMoat',
+    topic: 'ASML의 기술적·경제적 해자 — EUV 독점력, 진입 장벽',
+    file: 'mindmap_asml_moat_dashboard.jsx', lines: 895, chars: 46039,
+    tags: ['ASML','moat','EUV','investing','semi'],
+    x: -220, y: -510, r: 44 },
+  { id: 'tsmc', type: 'leaf', category: 'cat-invest', color: '#c084fc', gradient: 'url(#leaf-purple)',
+    label: 'TSMC\nMoat',
+    topic: 'TSMC의 경제적 해자 — 공정 기술 우위, 고객 lock-in',
+    file: 'mindmap_tsmc_moat_dashboard.jsx', lines: 918, chars: 52834,
+    tags: ['TSMC','moat','foundry','investing','semi'],
+    x:  220, y: -510, r: 44 },
+  { id: 'munger', type: 'leaf', category: 'cat-invest', color: '#c084fc', gradient: 'url(#leaf-purple)',
+    label: 'Munger\nLatticework',
+    topic: '찰리 멍거 격자틀 사고 체화 — 다학제 멘탈 모델 시스템',
+    file: 'mindmap_MungerLatticework.jsx', lines: 595, chars: 35372,
+    tags: ['munger','latticework','mental_models','investing'],
+    x:    0, y: -540, r: 42 },
+  { id: 'insurance', type: 'leaf', category: 'cat-invest', color: '#c084fc', gradient: 'url(#leaf-purple)',
+    label: 'Insurance\nComparison',
+    topic: '현대해상 vs 삼성화재 화재보험 비교 분석',
+    file: 'mindmap_insurance-comparison.jsx', lines: 608, chars: 26570,
+    tags: ['insurance','comparison','fire'],
+    x: -130, y: -390, r: 38 },
+
+  { id: 'claude-trends', type: 'leaf', category: 'cat-ai', color: '#4ade80', gradient: 'url(#leaf-green)',
+    label: 'Claude Trends\nDashboard',
+    topic: 'AI 에이전트 비서의 실질적 효과와 활용 트렌드 분석',
+    file: 'mindmap_ClaudeTrendsDashboard.jsx', lines: 934, chars: 54352,
+    tags: ['claude','AI_agent','trends','dashboard'],
+    x: 540, y: -300, r: 46 },
+];
+
+const EDGES = [
+  { from: 'center', to: 'cat-semi' },
+  { from: 'center', to: 'cat-invest' },
+  { from: 'center', to: 'cat-ai' },
+  { from: 'cat-semi', to: 'interferometer' },
+  { from: 'cat-semi', to: 'heterodyne' },
+  { from: 'cat-semi', to: 'grating' },
+  { from: 'cat-invest', to: 'asml' },
+  { from: 'cat-invest', to: 'tsmc' },
+  { from: 'cat-invest', to: 'munger' },
+  { from: 'cat-invest', to: 'insurance' },
+  { from: 'cat-ai', to: 'claude-trends' },
+];
+
+const CAT_LABELS = {
+  'cat-semi': '반도체 · 광학',
+  'cat-invest': '투자 · 분석',
+  'cat-ai': 'AI · 기술',
+};
+
+// ============== IFRAME RENDERER ==============
+// Builds a complete HTML document that loads React/Recharts/Babel via CDN
+// (with multi-CDN fallback) and renders the JSX component inside.
+function buildIframeHTML(jsxSource, fileName) {
+  const safeSrc = jsxSource
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`')
+    .replace(/\$\{/g, '\\${');
+  const safeName = fileName.replace(/[<>&"']/g, '');
+  const SCRIPT_OPEN = '<' + 'script';
+  const SCRIPT_CLOSE = '<' + '/script>';
+  return `<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>${safeName}</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #0f172a; color: #e2e8f0; font-family: 'Pretendard','Inter',system-ui,sans-serif; }
+  body { min-height: 100vh; padding: 8px; }
+  #root { width: 100%; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.25); border-radius: 2px; }
+  #__loader__ {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px; color: #94a3b8;
+    font-size: 11px; font-family: 'Pretendard',sans-serif; background: #0f172a; z-index: 10;
+  }
+  #__loader__ .sp { width: 28px; height: 28px;
+    border: 2.5px solid rgba(96,165,250,0.15); border-top-color: #60a5fa;
+    border-radius: 50%; animation: sp .9s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  #__loader__ .step { font-family: ui-monospace,monospace; font-size: 10px; opacity: 0.7; }
+  #__err__ {
+    position: fixed; inset: 0; background: #1a0e0e; color: #fca5a5;
+    padding: 20px; font-family: ui-monospace, monospace; font-size: 11px;
+    overflow: auto; white-space: pre-wrap; line-height: 1.6; display: none; z-index: 20;
+  }
+  #__err__ h3 { color: #fff; font-family: 'Pretendard',sans-serif; margin-bottom: 12px; font-size: 13px; }
+</style></head><body>
+<div id="root"></div>
+<div id="__loader__"><div class="sp"></div><div>라이브러리 로드 중…</div><div class="step" id="__step__">React</div></div>
+<div id="__err__"></div>
+${SCRIPT_OPEN}>
+(function() {
+  var step = document.getElementById('__step__');
+  var loader = document.getElementById('__loader__');
+  function setStep(s) { if (step) step.textContent = s; }
+  function showErr(msg) {
+    if (loader) loader.style.display = 'none';
+    var e = document.getElementById('__err__');
+    e.style.display = 'block';
+    e.textContent = '';
+    var h = document.createElement('h3');
+    h.textContent = 'JSX 렌더링 오류';
+    var pre = document.createElement('div');
+    pre.textContent = (msg || '').toString();
+    e.appendChild(h); e.appendChild(pre);
+  }
+  window.addEventListener('error', function(ev) {
+    if (ev.error) showErr(ev.message + '\\n\\n' + (ev.error.stack || ''));
+  });
+
+  function loadScript(urls) {
+    return new Promise(function(resolve, reject) {
+      var i = 0;
+      function tryNext() {
+        if (i >= urls.length) return reject(new Error('all CDNs failed'));
+        var s = document.createElement('script');
+        s.src = urls[i++];
+        s.async = false;
+        s.onload = function() { resolve(s.src); };
+        s.onerror = function() { tryNext(); };
+        document.head.appendChild(s);
+      }
+      tryNext();
+    });
+  }
+
+  var DEPS = [
+    { name: 'React', urls: [
+      'https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js',
+      'https://unpkg.com/react@18.3.1/umd/react.production.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js',
+    ]},
+    { name: 'ReactDOM', urls: [
+      'https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js',
+      'https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js',
+    ]},
+    { name: 'Recharts', urls: [
+      'https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.js',
+      'https://unpkg.com/recharts@2.12.7/umd/Recharts.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.js',
+    ]},
+    { name: 'Babel', urls: [
+      'https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js',
+      'https://unpkg.com/@babel/standalone@7.24.7/babel.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js',
+    ]},
+    { name: 'LucideReact', optional: true, urls: [
+      'https://cdn.jsdelivr.net/npm/lucide-react@0.383.0/dist/umd/lucide-react.min.js',
+      'https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.min.js',
+    ]},
+  ];
+
+  function loadAll() {
+    var p = Promise.resolve();
+    DEPS.forEach(function(d) {
+      p = p.then(function() {
+        setStep('Loading ' + d.name + '…');
+        return loadScript(d.urls).catch(function(err) {
+          if (d.optional) { return; }
+          throw err;
+        });
+      });
+    });
+    return p;
+  }
+
+  loadAll().then(function() {
+    setStep('Compiling JSX…');
+    if (!window.React || !window.ReactDOM || !window.Recharts || !window.Babel) {
+      var missing = [];
+      if (!window.React) missing.push('React');
+      if (!window.ReactDOM) missing.push('ReactDOM');
+      if (!window.Recharts) missing.push('Recharts');
+      if (!window.Babel) missing.push('Babel');
+      showErr('필수 라이브러리를 불러오지 못했습니다: ' + missing.join(', ') +
+        '\\n\\n네트워크 또는 광고 차단기가 CDN 접근을 막고 있을 수 있어요.\\n· cdn.jsdelivr.net\\n· unpkg.com\\n· cdnjs.cloudflare.com');
+      return;
+    }
+    var lucideMod = window.LucideReact || window.lucide || window['lucide-react'] || {};
+    var stubIcon = function(name) {
+      return function(props) {
+        props = props || {};
+        var size = props.size || 16;
+        return React.createElement('svg', {
+          width: size, height: size, viewBox: '0 0 24 24',
+          fill: 'none', stroke: 'currentColor', strokeWidth: 2,
+          strokeLinecap: 'round', strokeLinejoin: 'round',
+          style: props.style, className: props.className,
+        }, React.createElement('circle', { cx: 12, cy: 12, r: 9 }));
+      };
+    };
+    var lucideProxy = new Proxy(lucideMod, {
+      get: function(target, prop) {
+        if (prop in target) return target[prop];
+        if (typeof prop === 'string' && /^[A-Z]/.test(prop)) return stubIcon(prop);
+        return target[prop];
+      }
+    });
+    var requireShim = function(name) {
+      if (name === 'react') return window.React;
+      if (name === 'react-dom') return window.ReactDOM;
+      if (name === 'react-dom/client') return window.ReactDOM;
+      if (name === 'recharts') return window.Recharts;
+      if (name === 'lucide-react') return lucideProxy;
+      throw new Error('require: 알 수 없는 모듈 -> ' + name);
+    };
+    var raw = \`${safeSrc}\`;
+    var compiled;
+    try {
+      compiled = Babel.transform(raw, {
+        presets: [
+          ['env', { modules: 'commonjs', targets: { esmodules: true } }],
+          'react'
+        ]
+      }).code;
+    } catch (e) { showErr('Babel 컴파일 오류:\\n' + (e.message || e)); return; }
+
+    setStep('Rendering…');
+    var moduleObj = { exports: {} };
+    var fn;
+    try {
+      fn = new Function('require', 'module', 'exports', 'React', '"use strict";\\n' + compiled);
+    } catch (e) { showErr('모듈 래핑 오류:\\n' + (e.message || e)); return; }
+    try {
+      fn(requireShim, moduleObj, moduleObj.exports, window.React);
+    } catch (e) { showErr('모듈 실행 오류:\\n' + (e.message || e) + '\\n\\n' + (e.stack || '')); return; }
+
+    var Comp = moduleObj.exports.default;
+    if (!Comp && typeof moduleObj.exports === 'function') Comp = moduleObj.exports;
+    if (!Comp) {
+      for (var k in moduleObj.exports) {
+        if (typeof moduleObj.exports[k] === 'function') { Comp = moduleObj.exports[k]; break; }
+      }
+    }
+    if (!Comp) { showErr('default export 컴포넌트를 찾을 수 없습니다.'); return; }
+
+    try {
+      var root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(React.createElement(Comp));
+      if (loader) loader.style.display = 'none';
+      try { window.parent.postMessage({ type: 'jsx-rendered', file: '${safeName}' }, '*'); } catch(e) {}
+    } catch (e) { showErr('렌더 오류:\\n' + (e.message || e) + '\\n\\n' + (e.stack || '')); }
+  }).catch(function(err) {
+    showErr('CDN 로드 실패:\\n' + (err.message || err) +
+      '\\n\\n인터넷 연결을 확인해주세요. 시도된 CDN: jsdelivr → unpkg → cdnjs');
+  });
+})();
+${SCRIPT_CLOSE}
+</body></html>`;
+}
+
+// ============== SVG MINDMAP ==============
+const svg = document.getElementById('mindmap');
+const graphGroup = document.getElementById('graph-group');
+const edgesLayer = document.getElementById('edges-layer');
+const nodesLayer = document.getElementById('nodes-layer');
+const gridPattern = document.getElementById('grid-pattern');
+
+let view = { x: 0, y: 0, scale: 0.85 };
+let dragging = false;
+let dragStart = { x: 0, y: 0 };
+let activeFilter = 'all';
+
+const NODE_MAP = {};
+NODES.forEach(n => NODE_MAP[n.id] = n);
+
+function applyTransform() {
+  graphGroup.setAttribute('transform', `translate(${view.x},${view.y}) scale(${view.scale})`);
+  document.getElementById('zoom-display').textContent = Math.round(view.scale * 100) + '%';
+}
+function fitView() {
+  const w = window.innerWidth, h = window.innerHeight;
+  view = { x: w / 2, y: h / 2 + 60, scale: 0.85 };
+  applyTransform();
+}
+
+function drawGrid() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const sp = 36;
+  let html = '';
+  for (let y = 0; y < h + sp; y += sp) {
+    for (let x = 0; x < w + sp; x += sp) {
+      html += `<circle cx="${x}" cy="${y}" r="0.8" fill="rgba(148,163,184,0.16)"/>`;
+    }
+  }
+  gridPattern.innerHTML = html;
+}
+
+function drawEdges() {
+  edgesLayer.innerHTML = '';
+  EDGES.forEach(e => {
+    const from = NODE_MAP[e.from], to = NODE_MAP[e.to];
+    if (!from || !to) return;
+    const isMain = from.type === 'center';
+    const color = to.color || '#94a3b8';
+    const cx = (from.x + to.x) / 2;
+    const cy = (from.y + to.y) / 2;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${from.x} ${from.y} Q ${cx} ${cy} ${to.x} ${to.y}`);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', isMain ? 1.6 : 1.1);
+    path.setAttribute('opacity', isMain ? 0.55 : 0.38);
+    path.setAttribute('stroke-dasharray', isMain ? 'none' : '4,5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.dataset.fromCat = (from.type === 'category') ? from.id : (from.type === 'center' ? 'center' : '');
+    path.dataset.toCat = (to.type === 'leaf') ? to.category : (to.type === 'category' ? to.id : '');
+    edgesLayer.appendChild(path);
+  });
+}
+
+function addText(parent, text, x, y, size, fill, weight) {
+  const lines = text.split('\n');
+  const lh = size * 1.3;
+  const totalH = (lines.length - 1) * lh;
+  lines.forEach((line, i) => {
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', x);
+    t.setAttribute('y', y - totalH / 2 + i * lh + size * 0.35);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-size', size);
+    t.setAttribute('fill', fill);
+    t.setAttribute('font-weight', weight || 500);
+    t.setAttribute('font-family', "'Pretendard', system-ui, sans-serif");
+    t.setAttribute('letter-spacing', '-0.01em');
+    t.setAttribute('pointer-events', 'none');
+    t.textContent = line;
+    parent.appendChild(t);
+  });
+}
+
+function drawNodes() {
+  nodesLayer.innerHTML = '';
+  NODES.forEach(n => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', `translate(${n.x},${n.y})`);
+    g.dataset.id = n.id;
+    g.dataset.type = n.type;
+    if (n.type === 'leaf') g.dataset.category = n.category;
+    g.style.cursor = (n.type === 'center') ? 'default' : 'pointer';
+    g.classList.add(n.type + '-node');
+
+    if (n.type === 'center') {
+      const ringOuter = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      ringOuter.setAttribute('r', n.r + 18);
+      ringOuter.setAttribute('fill', 'none');
+      ringOuter.setAttribute('stroke', 'rgba(148,163,184,0.2)');
+      ringOuter.setAttribute('stroke-dasharray', '2,4');
+      g.appendChild(ringOuter);
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('r', n.r);
+      c.setAttribute('fill', 'url(#center-grad)');
+      c.setAttribute('stroke', 'rgba(203,213,225,0.3)');
+      c.setAttribute('stroke-width', '1');
+      g.appendChild(c);
+      const inner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      inner.setAttribute('r', n.r - 6);
+      inner.setAttribute('fill', 'none');
+      inner.setAttribute('stroke', 'rgba(255,255,255,0.04)');
+      g.appendChild(inner);
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      icon.setAttribute('transform', `translate(0, -22)`);
+      const ic = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      ic.setAttribute('d', 'M-8,-2 L-2,-8 L8,-2 L8,8 L-8,8 Z');
+      ic.setAttribute('fill', 'none');
+      ic.setAttribute('stroke', 'rgba(203,213,225,0.6)');
+      ic.setAttribute('stroke-width', '1.4');
+      ic.setAttribute('stroke-linejoin', 'round');
+      icon.appendChild(ic);
+      g.appendChild(icon);
+      addText(g, n.label, 0, 8, 13, '#f1f5f9', 700);
+
+    } else if (n.type === 'category') {
+      const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      halo.setAttribute('r', n.r + 14);
+      halo.setAttribute('fill', n.color);
+      halo.setAttribute('opacity', '0.06');
+      g.appendChild(halo);
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('r', n.r);
+      c.setAttribute('fill', n.gradient);
+      c.setAttribute('stroke', n.color);
+      c.setAttribute('stroke-width', '1.2');
+      c.setAttribute('opacity', '0.95');
+      g.appendChild(c);
+      const inner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      inner.setAttribute('r', n.r - 5);
+      inner.setAttribute('fill', 'none');
+      inner.setAttribute('stroke', 'rgba(255,255,255,0.18)');
+      g.appendChild(inner);
+      addText(g, n.label, 0, 0, 12, '#fff', 700);
+      g.addEventListener('mouseenter', () => highlightCategory(n.id));
+      g.addEventListener('mouseleave', clearHighlight);
+      g.addEventListener('click', e => { e.stopPropagation(); setFilter(n.id); });
+
+    } else {
+      // Leaf node — hover via inner circle radius/opacity (NO CSS transform)
+      const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      halo.setAttribute('r', n.r + 8);
+      halo.setAttribute('fill', n.color);
+      halo.setAttribute('opacity', '0');
+      halo.classList.add('halo');
+      g.appendChild(halo);
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('r', n.r);
+      c.setAttribute('fill', n.gradient);
+      c.setAttribute('stroke', n.color);
+      c.setAttribute('stroke-width', '1.2');
+      c.setAttribute('opacity', '0.95');
+      c.classList.add('bg');
+      g.appendChild(c);
+      const inner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      inner.setAttribute('r', n.r - 4);
+      inner.setAttribute('fill', 'none');
+      inner.setAttribute('stroke', 'rgba(255,255,255,0.06)');
+      g.appendChild(inner);
+      addText(g, n.label, 0, -2, 10, '#e2e8f0', 600);
+      const badge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      badge.setAttribute('x', 0);
+      badge.setAttribute('y', n.r - 8);
+      badge.setAttribute('text-anchor', 'middle');
+      badge.setAttribute('font-size', '8.5');
+      badge.setAttribute('font-family', 'JetBrains Mono, monospace');
+      badge.setAttribute('fill', n.color);
+      badge.setAttribute('opacity', '0.65');
+      badge.textContent = n.lines + 'L';
+      g.appendChild(badge);
+      // Stable invisible hit area covers the whole halo area
+      const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      hit.setAttribute('r', n.r + 10);
+      hit.setAttribute('fill', 'transparent');
+      g.appendChild(hit);
+
+      g.addEventListener('mouseenter', e => {
+        halo.setAttribute('opacity', '0.22');
+        c.setAttribute('r', n.r + 2);
+        c.setAttribute('opacity', '1');
+        c.setAttribute('filter', 'url(#glow-soft)');
+        inner.setAttribute('r', n.r - 2);
+        showTooltip(e, n);
+      });
+      g.addEventListener('mousemove', e => moveTooltip(e));
+      g.addEventListener('mouseleave', () => {
+        halo.setAttribute('opacity', '0');
+        c.setAttribute('r', n.r);
+        c.setAttribute('opacity', '0.95');
+        c.removeAttribute('filter');
+        inner.setAttribute('r', n.r - 4);
+        hideTooltip();
+      });
+      g.addEventListener('click', e => { e.stopPropagation(); openPopup(n, e); });
+    }
+    nodesLayer.appendChild(g);
+  });
+}
+
+function setFilter(cat) {
+  activeFilter = cat;
+  document.querySelectorAll('.side-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.cat === cat);
+  });
+  applyFilter();
+}
+
+function applyFilter() {
+  document.querySelectorAll('.leaf-node').forEach(g => {
+    const cat = g.dataset.category;
+    const match = activeFilter === 'all' || cat === activeFilter;
+    g.style.opacity = match ? '1' : '0.18';
+    g.style.pointerEvents = match ? 'auto' : 'none';
+  });
+  edgesLayer.querySelectorAll('path').forEach(p => {
+    const fc = p.dataset.fromCat, tc = p.dataset.toCat;
+    let active = (activeFilter === 'all') || (fc === activeFilter) || (tc === activeFilter);
+    p.style.opacity = active ? p.getAttribute('opacity') : '0.08';
+  });
+  document.querySelectorAll('.category-node').forEach(g => {
+    const id = g.dataset.id;
+    g.style.opacity = (activeFilter === 'all' || activeFilter === id) ? '1' : '0.4';
+  });
+}
+
+function highlightCategory(catId) {
+  if (activeFilter !== 'all') return;
+  document.querySelectorAll('.leaf-node').forEach(g => {
+    g.style.opacity = (g.dataset.category === catId) ? '1' : '0.3';
+  });
+}
+function clearHighlight() {
+  if (activeFilter !== 'all') return;
+  document.querySelectorAll('.leaf-node').forEach(g => g.style.opacity = '1');
+}
+
+document.querySelectorAll('#cat-filter .side-item').forEach(el => {
+  el.addEventListener('click', () => setFilter(el.dataset.cat));
+});
+
+const tooltip = document.getElementById('tooltip');
+function showTooltip(e, n) {
+  tooltip.innerHTML = `
+    <div class="tt-title">${n.label.replace('\n',' ')}</div>
+    <div class="tt-desc">${n.topic}</div>
+    <div class="tt-meta">
+      <span>${n.lines.toLocaleString()}L</span>
+      <span>·</span>
+      <span>${(n.chars/1000).toFixed(1)}KB</span>
+      <span>·</span>
+      <span style="color:${n.color}">${CAT_LABELS[n.category]||''}</span>
+    </div>`;
+  tooltip.style.display = 'block';
+  moveTooltip(e);
+}
+function moveTooltip(e) {
+  tooltip.style.left = (e.clientX + 14) + 'px';
+  tooltip.style.top = e.clientY + 'px';
+}
+function hideTooltip() { tooltip.style.display = 'none'; }
+
+const container = document.getElementById('canvas-container');
+container.addEventListener('mousedown', e => {
+  if (e.target.closest('.phone, #sidebar, #topbar, #bottombar')) return;
+  if (e.button !== 0) return;
+  dragging = true;
+  dragStart = { x: e.clientX - view.x, y: e.clientY - view.y };
+  container.classList.add('grabbing');
+  hideTooltip();
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  view.x = e.clientX - dragStart.x;
+  view.y = e.clientY - dragStart.y;
+  applyTransform();
+});
+window.addEventListener('mouseup', () => {
+  dragging = false;
+  container.classList.remove('grabbing');
+});
+container.addEventListener('wheel', e => {
+  if (e.target.closest('.phone, #sidebar')) return;
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  const newScale = Math.min(Math.max(view.scale * delta, 0.3), 3);
+  const rect = container.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  view.x = mx - (mx - view.x) * (newScale / view.scale);
+  view.y = my - (my - view.y) * (newScale / view.scale);
+  view.scale = newScale;
+  applyTransform();
+}, { passive: false });
+
+document.getElementById('btn-zoom-in').addEventListener('click', () => {
+  view.scale = Math.min(view.scale * 1.2, 3); applyTransform();
+});
+document.getElementById('btn-zoom-out').addEventListener('click', () => {
+  view.scale = Math.max(view.scale / 1.2, 0.3); applyTransform();
+});
+document.getElementById('btn-fit').addEventListener('click', fitView);
+document.getElementById('btn-reset').addEventListener('click', () => {
+  setFilter('all'); fitView();
+});
+
+// ============== POPUP ==============
+const phone = document.getElementById('phone');
+const backdrop = document.getElementById('popup-backdrop');
+const phoneIframe = document.getElementById('phone-iframe');
+const iframeLoading = document.getElementById('iframe-loading');
+let currentNode = null;
+
+function openPopup(node, evt) {
+  currentNode = node;
+  const phoneW = 380, phoneH = 720;
+  const margin = 70;
+  const winW = window.innerWidth, winH = window.innerHeight;
+  const cx = evt.clientX, cy = evt.clientY;
+  let px = cx + 24;
+  let py = cy - phoneH / 2;
+  if (px + phoneW + 16 > winW) px = cx - phoneW - 24;
+  if (px < 16) px = Math.max(16, (winW - phoneW) / 2);
+  if (py < margin) py = margin;
+  if (py + phoneH + margin > winH) py = winH - phoneH - margin;
+  const anchorX = Math.max(0, Math.min(phoneW, cx - px));
+  const anchorY = Math.max(0, Math.min(phoneH, cy - py));
+  phone.style.setProperty('--anchor-x', anchorX + 'px');
+  phone.style.setProperty('--anchor-y', anchorY + 'px');
+  phone.style.left = px + 'px';
+  phone.style.top = py + 'px';
+
+  document.getElementById('tab-title').textContent = node.label.replace('\n',' ');
+  document.getElementById('tab-dot').style.background = node.color;
+  document.getElementById('tab-dot').style.boxShadow = '0 0 8px ' + node.color;
+
+  const metaEl = document.getElementById('phone-meta');
+  metaEl.innerHTML = `
+    <span class="chip"><b>${node.lines.toLocaleString()}</b> lines</span>
+    <span class="chip"><b>${(node.chars/1000).toFixed(1)}</b>KB</span>
+    <span class="chip" style="color:${node.color}">${CAT_LABELS[node.category]||''}</span>
+  `;
+
+  const now = new Date();
+  document.getElementById('phone-time').textContent =
+    now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+
+  iframeLoading.classList.remove('hidden');
+
+  const src = (window.JSX_SOURCES || {})[node.file];
+  if (!src) {
+    iframeLoading.innerHTML = '<div style="color:#fca5a5; font-size:12px;">JSX 소스를 찾을 수 없습니다: ' + node.file + '</div>';
+  } else {
+    phoneIframe.srcdoc = buildIframeHTML(src, node.file);
+  }
+
+  requestAnimationFrame(() => {
+    backdrop.classList.add('open');
+    phone.classList.add('open');
+  });
+  document.getElementById('hint').classList.add('hidden');
+}
+
+function closePopup() {
+  phone.classList.remove('open');
+  backdrop.classList.remove('open');
+  setTimeout(() => {
+    if (!phone.classList.contains('open')) {
+      phoneIframe.srcdoc = '';
+      iframeLoading.classList.remove('hidden');
+      iframeLoading.innerHTML = '<div class="spinner"></div><div style="font-size:12px">JSX 컴포넌트 로드 중…</div>';
+    }
+  }, 320);
+  currentNode = null;
+}
+
+backdrop.addEventListener('click', closePopup);
+document.getElementById('tab-close').addEventListener('click', closePopup);
+document.getElementById('tab-refresh').addEventListener('click', () => {
+  if (!currentNode) return;
+  iframeLoading.classList.remove('hidden');
+  iframeLoading.innerHTML = '<div class="spinner"></div><div style="font-size:12px">JSX 컴포넌트 로드 중…</div>';
+  const src = (window.JSX_SOURCES || {})[currentNode.file];
+  if (src) phoneIframe.srcdoc = buildIframeHTML(src, currentNode.file);
+});
+document.getElementById('tab-expand').addEventListener('click', () => {
+  if (!currentNode) return;
+  const src = (window.JSX_SOURCES || {})[currentNode.file];
+  if (!src) return;
+  const html = buildIframeHTML(src, currentNode.file).replace(
+    'body { min-height: 100vh; padding: 8px; }',
+    'body { min-height: 100vh; padding: 16px; max-width: 1400px; margin: 0 auto; }'
+  );
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+});
+
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'jsx-rendered') {
+    iframeLoading.classList.add('hidden');
+  }
+});
+phoneIframe.addEventListener('load', () => {
+  setTimeout(() => iframeLoading.classList.add('hidden'), 3000);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePopup();
+  if (e.key === 'f' && !phone.classList.contains('open')) fitView();
+});
+
+// ============== TOP LIST ==============
+function buildRecentList() {
+  const recent = NODES.filter(n => n.type === 'leaf')
+    .sort((a, b) => b.lines - a.lines)
+    .slice(0, 5);
+  const html = recent.map(n => `
+    <div class="side-item" data-leaf="${n.id}">
+      <span class="side-dot" style="background:${n.color}"></span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${n.label.replace('\n',' ')}</span>
+      <span class="side-count">${n.lines}L</span>
+    </div>
+  `).join('');
+  document.getElementById('recent-list').innerHTML = html;
+  document.querySelectorAll('[data-leaf]').forEach(el => {
+    el.addEventListener('click', () => {
+      const node = NODES.find(x => x.id === el.dataset.leaf);
+      const rect = el.getBoundingClientRect();
+      openPopup(node, { clientX: rect.right, clientY: rect.top + rect.height / 2 });
+    });
+  });
+}
+
+// ============== INIT ==============
+function init() {
+  drawGrid();
+  drawEdges();
+  drawNodes();
+  fitView();
+  buildRecentList();
+  setTimeout(() => document.getElementById('hint').classList.add('hidden'), 8000);
+}
+
+window.addEventListener('resize', () => { drawGrid(); });
+
+init();
+</script>
+
+</body>
+</html>

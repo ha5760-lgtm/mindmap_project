@@ -1,0 +1,12 @@
+{
+  "name": "mindmap-project",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-project.mjs",
+    "add:jsx": "node scripts/add-jsx-dashboard.mjs",
+    "sync:jsx": "node scripts/sync-jsx-sources.mjs"
+  }
+}
+

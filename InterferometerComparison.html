@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InterferometerComparison</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./vendor/react.production.min.js"></script>
+  <script src="./vendor/react-dom.production.min.js"></script>
+  <script src="./vendor/babel.min.js"></script>
+  <script src="./vendor/prop-types.min.js"></script>
+  <script src="./vendor/Recharts.js"></script>
+  <script src="./vendor/lucide.min.js"></script>
+  
+<script>
+(function(){
+  function createLucideReactAdapter(){
+    var icons = (window.lucide && window.lucide.icons) || {};
+    var attrMap = {'stroke-width':'strokeWidth','stroke-linecap':'strokeLinecap','stroke-linejoin':'strokeLinejoin','fill-rule':'fillRule','clip-rule':'clipRule','class':'className'};
+    function toReactAttrs(attrs){
+      var out = {};
+      attrs = attrs || {};
+      Object.keys(attrs).forEach(function(key){ out[attrMap[key] || key] = attrs[key]; });
+      return out;
+    }
+    function renderNode(node, index){
+      return React.createElement(node[0], Object.assign({key:index}, toReactAttrs(node[1])), (node[2] || []).map(renderNode));
+    }
+    function makeIcon(name){
+      return function Icon(props){
+        props = props || {};
+        var size = props.size || 24;
+        var iconNode = icons[name] || icons.Circle || [];
+        return React.createElement('svg', Object.assign({}, props, {
+          xmlns:'http://www.w3.org/2000/svg', width:size, height:size, viewBox:'0 0 24 24',
+          fill:props.fill || 'none', stroke:props.color || 'currentColor', strokeWidth:props.strokeWidth || 2,
+          strokeLinecap:'round', strokeLinejoin:'round', className:props.className || '', style:props.style || {}
+        }), iconNode.map(renderNode));
+      };
+    }
+    return new Proxy({}, { get:function(_, prop){ if(prop === '__esModule') return true; if(prop === 'default') return {}; if(typeof prop === 'string') return makeIcon(prop); } });
+  }
+  window.LucideReact = window.LucideReact || createLucideReactAdapter();
+})();
+</script>
+</head>
+<body style="margin:0; padding:0; background:#020617;">
+  <div id="root"></div>
+  <script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef  } = React;
+const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area  } = Recharts;
+function InterferometerComparison() {
+  const [activeTab, setActiveTab] = useState('michelson');
+  const [time, setTime] = useState(0);
+  const [phaseShift, setPhaseShift] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(true);
+
+  useEffect(() => {
+    if (!isAnimating) return;
+    const interval = setInterval(() => {
+      setTime(t => t + 0.05);
+    }, 30);
+    return () => clearInterval(interval);
+  }, [isAnimating]);
+
+  // 신호 데이터 생성
+  const generateMichelsonData = () => {
+    const data = [];
+    for (let x = 0; x <= 4 * Math.PI; x += 0.1) {
+      const intensity = 0.5 + 0.5 * Math.cos(x + phaseShift);
+      data.push({
+        x: x.toFixed(2),
+        intensity: intensity,
+        dc: 0.5,
+      });
+    }
+    return data;
+  };
+
+  const generateHeterodyneData = () => {
+    const data = [];
+    const f1 = 1.0;
+    const f2 = 1.1; // 주파수 차이 = 비트 주파수
+    for (let t = 0; t <= 20; t += 0.1) {
+      const beam1 = Math.cos(2 * Math.PI * f1 * t);
+      const beam2 = Math.cos(2 * Math.PI * f2 * t + phaseShift);
+      const beat = beam1 + beam2;
+      const detected = 1 + Math.cos(2 * Math.PI * (f2 - f1) * t + phaseShift);
+      data.push({
+        t: t.toFixed(2),
+        beam1: beam1,
+        beam2: beam2,
+        detected: detected / 2,
+      });
+    }
+    return data;
+  };
+
+  const michelsonData = generateMichelsonData();
+  const heterodyneData = generateHeterodyneData();
+
+  // 비교표 데이터
+  const comparisonRows = [
+    { feature: '광원', michelson: '단일 주파수 (f₀)', heterodyne: '두 주파수 (f₁, f₂)', icon: '💡' },
+    { feature: '주파수 분리', michelson: '없음', heterodyne: 'AOM 또는 Zeeman 분리', icon: '🔀' },
+    { feature: '검출 신호', michelson: 'DC 강도 (정적)', heterodyne: 'AC 비트 신호 (Δf)', icon: '📡' },
+    { feature: '신호 형태', michelson: 'I = I₀(1+cos φ)', heterodyne: 'I = I₀cos(2π·Δf·t + φ)', icon: '〰️' },
+    { feature: '위상 측정', michelson: '강도→위상 (모호함)', heterodyne: '시간차→위상 (정확)', icon: '⏱️' },
+    { feature: '광원 변동 영향', michelson: '직접 영향 (큼)', heterodyne: '비트 주파수 무관 (작음)', icon: '🛡️' },
+    { feature: 'DC 노이즈', michelson: '취약함', heterodyne: '면역 (AC 검출)', icon: '🔇' },
+    { feature: '분해능', michelson: 'λ/2 ~ λ/100', heterodyne: 'λ/4096 이하 (sub-nm)', icon: '🎯' },
+    { feature: '주요 응용', michelson: 'LIGO, 표면측정, 학술', heterodyne: 'ASML 노광기, 정밀계측', icon: '🏭' },
+  ];
+
+  // ASML 응용 데이터
+  const applicationsData = [
+    { name: 'Wafer Stage', resolution: 0.05, type: 'Heterodyne' },
+    { name: 'Reticle Stage', resolution: 0.08, type: 'Heterodyne' },
+    { name: 'LIGO 중력파', resolution: 1e-15, type: 'Michelson' },
+    { name: '표면 측정', resolution: 10, type: 'Michelson' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-6" style={{ fontFamily: "'Pretendard', 'Noto Sans KR', system-ui, sans-serif" }}>
+      <style>{`
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        @keyframes wave-flow {
+          0% { stroke-dashoffset: 0; }
+          100% { stroke-dashoffset: -40; }
+        }
+        @keyframes pulse-glow {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
+        }
+        .glow-cyan { filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.6)); }
+        .glow-amber { filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.6)); }
+        .glow-pink { filter: drop-shadow(0 0 6px rgba(244, 114, 182, 0.6)); }
+        .glow-green { filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.6)); }
+      `}</style>
+
+      <div className="max-w-7xl mx-auto">
+        {/* 헤더 */}
+        <header className="mb-8 border-l-4 border-cyan-400 pl-6">
+          <div className="text-xs tracking-[0.3em] text-cyan-400 mb-2">OPTICAL METROLOGY · 광학 간섭계 비교</div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-tight">
+            Michelson <span className="text-slate-500">vs</span> <span className="text-amber-400">Heterodyne</span> 간섭계
+          </h1>
+          <p className="text-slate-400 text-lg">두 가지 간섭계 방식의 광학 구조와 신호 검출 원리 비교</p>
+        </header>
+
+        {/* 핵심 차이 요약 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 backdrop-blur">
+            <div className="text-xs text-slate-500 mb-1">핵심 차이</div>
+            <div className="text-2xl font-bold text-cyan-400">광원 주파수</div>
+            <div className="text-sm text-slate-400 mt-2">Michelson: 단일 f₀ / Heterodyne: f₁, f₂ 두 주파수</div>
+          </div>
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 backdrop-blur">
+            <div className="text-xs text-slate-500 mb-1">검출 방식</div>
+            <div className="text-2xl font-bold text-amber-400">DC vs AC</div>
+            <div className="text-sm text-slate-400 mt-2">Michelson: 강도 측정 / Heterodyne: 비트 주파수 위상</div>
+          </div>
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 backdrop-blur">
+            <div className="text-xs text-slate-500 mb-1">분해능</div>
+            <div className="text-2xl font-bold text-pink-400">~10000배</div>
+            <div className="text-sm text-slate-400 mt-2">Heterodyne가 노이즈 면역성·분해능에서 압도적 우위</div>
+          </div>
+        </div>
+
+        {/* 탭 네비게이션 */}
+        <div className="flex gap-2 mb-6 border-b border-slate-800">
+          {[
+            { id: 'michelson', label: '01 · Michelson 간섭계', color: 'cyan' },
+            { id: 'heterodyne', label: '02 · Heterodyne 간섭계', color: 'amber' },
+            { id: 'compare', label: '03 · 직접 비교', color: 'pink' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-5 py-3 text-sm font-medium tracking-wide transition-all ${
+                activeTab === tab.id
+                  ? `text-${tab.color}-400 border-b-2 border-${tab.color}-400`
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+              style={{
+                color: activeTab === tab.id ? (tab.color === 'cyan' ? '#22d3ee' : tab.color === 'amber' ? '#fbbf24' : '#f472b6') : undefined,
+                borderColor: activeTab === tab.id ? (tab.color === 'cyan' ? '#22d3ee' : tab.color === 'amber' ? '#fbbf24' : '#f472b6') : undefined,
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Michelson 탭 */}
+        {activeTab === 'michelson' && (
+          <div className="space-y-6">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h2 className="text-2xl font-bold mb-1 text-cyan-400">Michelson 간섭계 구조</h2>
+              <p className="text-slate-400 text-sm mb-6">단일 주파수 광원을 빔스플리터로 분리하여 두 경로의 광로차를 측정</p>
+
+              <svg viewBox="0 0 700 400" className="w-full h-auto bg-slate-950 rounded-lg border border-slate-800">
+                {/* 그리드 배경 */}
+                <defs>
+                  <pattern id="grid1" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" strokeWidth="0.5"/>
+                  </pattern>
+                </defs>
+                <rect width="700" height="400" fill="url(#grid1)"/>
+
+                {/* 광원 (Laser) */}
+                <rect x="30" y="180" width="60" height="40" fill="#0f172a" stroke="#22d3ee" strokeWidth="2" rx="4"/>
+                <text x="60" y="205" textAnchor="middle" fill="#22d3ee" fontSize="11" fontWeight="bold">LASER</text>
+                <text x="60" y="240" textAnchor="middle" fill="#94a3b8" fontSize="10">f₀ (단일)</text>
+
+                {/* 입사 빔 */}
+                <line x1="90" y1="200" x2="300" y2="200" stroke="#22d3ee" strokeWidth="2.5" className="glow-cyan">
+                  <animate attributeName="stroke-dasharray" values="0,200;200,0" dur="2s" repeatCount="indefinite"/>
+                </line>
+
+                {/* 빔스플리터 */}
+                <g transform="translate(300, 200) rotate(45)">
+                  <rect x="-25" y="-2" width="50" height="4" fill="#94a3b8" opacity="0.7"/>
+                  <rect x="-25" y="-2" width="50" height="4" fill="none" stroke="#cbd5e1" strokeWidth="1"/>
+                </g>
+                <text x="300" y="170" textAnchor="middle" fill="#cbd5e1" fontSize="10">BS</text>
+                <text x="300" y="245" textAnchor="middle" fill="#64748b" fontSize="9">빔스플리터</text>
+
+                {/* 위쪽 경로 (참조 거울) */}
+                <line x1="300" y1="200" x2="300" y2="70" stroke="#22d3ee" strokeWidth="2" className="glow-cyan" strokeDasharray="4,2">
+                  <animate attributeName="stroke-dashoffset" values="0;-12" dur="0.8s" repeatCount="indefinite"/>
+                </line>
+                <rect x="270" y="40" width="60" height="20" fill="#0f172a" stroke="#22d3ee" strokeWidth="2"/>
+                <line x1="270" y1="60" x2="330" y2="60" stroke="#22d3ee" strokeWidth="3"/>
+                <text x="300" y="30" textAnchor="middle" fill="#22d3ee" fontSize="10" fontWeight="bold">M₁ (참조)</text>
+
+                {/* 오른쪽 경로 (측정 거울) */}
+                <line x1="300" y1="200" x2="540" y2="200" stroke="#22d3ee" strokeWidth="2" className="glow-cyan" strokeDasharray="4,2">
+                  <animate attributeName="stroke-dashoffset" values="0;-12" dur="0.8s" repeatCount="indefinite"/>
+                </line>
+                <rect x="540" y="170" width="20" height="60" fill="#0f172a" stroke="#fbbf24" strokeWidth="2"/>
+                <line x1="540" y1="170" x2="540" y2="230" stroke="#fbbf24" strokeWidth="3"/>
+                <text x="595" y="185" fill="#fbbf24" fontSize="10" fontWeight="bold">M₂ (측정)</text>
+                <text x="595" y="200" fill="#94a3b8" fontSize="9">↔ 이동</text>
+                <text x="595" y="215" fill="#64748b" fontSize="9">측정 대상</text>
+
+                {/* 반사된 빔 (위쪽에서 돌아옴) */}
+                <line x1="300" y1="70" x2="300" y2="200" stroke="#a78bfa" strokeWidth="1.5" opacity="0.6" strokeDasharray="2,2"/>
+                <line x1="540" y1="200" x2="300" y2="200" stroke="#a78bfa" strokeWidth="1.5" opacity="0.6" strokeDasharray="2,2"/>
+
+                {/* 검출기로 가는 결합 빔 */}
+                <line x1="300" y1="200" x2="300" y2="340" stroke="#f472b6" strokeWidth="2.5" className="glow-pink">
+                  <animate attributeName="stroke-dasharray" values="0,140;140,0" dur="1.5s" repeatCount="indefinite"/>
+                </line>
+
+                {/* 검출기 */}
+                <rect x="270" y="340" width="60" height="40" fill="#0f172a" stroke="#f472b6" strokeWidth="2" rx="4"/>
+                <text x="300" y="360" textAnchor="middle" fill="#f472b6" fontSize="11" fontWeight="bold">검출기</text>
+                <text x="300" y="373" textAnchor="middle" fill="#94a3b8" fontSize="9">Photodiode</text>
+
+                {/* 라벨: 광로차 */}
+                <text x="420" y="195" fill="#fbbf24" fontSize="11" fontStyle="italic">ΔL = L₂ − L₁</text>
+
+                {/* 수식 박스 */}
+                <rect x="450" y="280" width="220" height="80" fill="#0f172a" stroke="#475569" rx="6" opacity="0.95"/>
+                <text x="460" y="300" fill="#94a3b8" fontSize="10">검출 신호:</text>
+                <text x="460" y="320" fill="#22d3ee" fontSize="13" fontFamily="monospace">I = I₀[1 + cos(2k·ΔL)]</text>
+                <text x="460" y="340" fill="#94a3b8" fontSize="10">위상: φ = 4π·ΔL / λ</text>
+                <text x="460" y="355" fill="#fbbf24" fontSize="9">→ DC 강도 변화로 측정</text>
+              </svg>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <div className="bg-slate-950/50 border border-cyan-900/50 rounded-lg p-4">
+                  <div className="text-cyan-400 text-sm font-semibold mb-2">✓ 장점</div>
+                  <ul className="text-slate-300 text-sm space-y-1">
+                    <li>• 구조가 단순하고 직관적</li>
+                    <li>• 광원이 저렴 (HeNe 등)</li>
+                    <li>• 교육·연구용으로 적합</li>
+                    <li>• LIGO 같은 극단적 정밀계측 가능</li>
+                  </ul>
+                </div>
+                <div className="bg-slate-950/50 border border-red-900/50 rounded-lg p-4">
+                  <div className="text-red-400 text-sm font-semibold mb-2">✗ 단점</div>
+                  <ul className="text-slate-300 text-sm space-y-1">
+                    <li>• 광원 강도 변동에 직접 영향</li>
+                    <li>• DC 노이즈에 취약</li>
+                    <li>• 방향 모호성 (cos는 ±φ 동일)</li>
+                    <li>• 산업용 실시간 위치제어 부적합</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* 신호 차트 */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-4 text-cyan-400">Michelson 검출 신호 (DC 강도)</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={michelsonData}>
+                  <defs>
+                    <linearGradient id="colorIntensity" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.6}/>
+                      <stop offset="95%" stopColor="#22d3ee" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b"/>
+                  <XAxis dataKey="x" stroke="#64748b" tick={{ fontSize: 10 }} label={{ value: '광로차 (rad)', position: 'insideBottom', offset: -5, fill: '#94a3b8' }}/>
+                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} label={{ value: '강도 I/I₀', angle: -90, position: 'insideLeft', fill: '#94a3b8' }}/>
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '6px' }}/>
+                  <Area type="monotone" dataKey="intensity" stroke="#22d3ee" strokeWidth={2} fill="url(#colorIntensity)"/>
+                </AreaChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-slate-500 mt-2">광로차가 변하면 검출기는 정적인(DC) 강도 변화만 봄. λ/2 이동할 때마다 한 주기.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Heterodyne 탭 */}
+        {activeTab === 'heterodyne' && (
+          <div className="space-y-6">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h2 className="text-2xl font-bold mb-1 text-amber-400">Heterodyne 간섭계 구조</h2>
+              <p className="text-slate-400 text-sm mb-6">두 개의 약간 다른 주파수(f₁, f₂)로 분리된 빔의 비트 신호로 위상 측정</p>
+
+              <svg viewBox="0 0 700 420" className="w-full h-auto bg-slate-950 rounded-lg border border-slate-800">
+                <defs>
+                  <pattern id="grid2" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" strokeWidth="0.5"/>
+                  </pattern>
+                </defs>
+                <rect width="700" height="420" fill="url(#grid2)"/>
+
+                {/* 이중 주파수 광원 */}
+                <rect x="20" y="180" width="80" height="50" fill="#0f172a" stroke="#fbbf24" strokeWidth="2" rx="4"/>
+                <text x="60" y="200" textAnchor="middle" fill="#fbbf24" fontSize="10" fontWeight="bold">DUAL-FREQ</text>
+                <text x="60" y="215" textAnchor="middle" fill="#fbbf24" fontSize="10" fontWeight="bold">LASER</text>
+                <text x="60" y="227" textAnchor="middle" fill="#94a3b8" fontSize="8">(Zeeman/AOM)</text>
+                <text x="60" y="252" textAnchor="middle" fill="#22d3ee" fontSize="9">f₁ (편광 1)</text>
+                <text x="60" y="265" textAnchor="middle" fill="#f472b6" fontSize="9">f₂ (편광 2)</text>
+
+                {/* 입사 빔 - 두 색상 함께 */}
+                <line x1="100" y1="203" x2="280" y2="203" stroke="#22d3ee" strokeWidth="2" className="glow-cyan">
+                  <animate attributeName="stroke-dasharray" values="0,180;180,0" dur="1.5s" repeatCount="indefinite"/>
+                </line>
+                <line x1="100" y1="208" x2="280" y2="208" stroke="#f472b6" strokeWidth="2" className="glow-pink">
+                  <animate attributeName="stroke-dasharray" values="0,180;180,0" dur="1.7s" repeatCount="indefinite"/>
+                </line>
+
+                {/* 편광 빔스플리터 (PBS) */}
+                <g transform="translate(290, 205) rotate(45)">
+                  <rect x="-25" y="-2" width="50" height="4" fill="#fbbf24" opacity="0.7"/>
+                  <rect x="-25" y="-2" width="50" height="4" fill="none" stroke="#fde68a" strokeWidth="1"/>
+                </g>
+                <text x="290" y="172" textAnchor="middle" fill="#fde68a" fontSize="10">PBS</text>
+                <text x="290" y="250" textAnchor="middle" fill="#64748b" fontSize="9">편광 빔스플리터</text>
+
+                {/* f₁ 경로 (참조, 위쪽) */}
+                <line x1="290" y1="205" x2="290" y2="80" stroke="#22d3ee" strokeWidth="2" className="glow-cyan" strokeDasharray="4,2">
+                  <animate attributeName="stroke-dashoffset" values="0;-12" dur="0.8s" repeatCount="indefinite"/>
+                </line>
+                <polygon points="270,50 310,50 290,80" fill="#0f172a" stroke="#22d3ee" strokeWidth="2"/>
+                <text x="290" y="40" textAnchor="middle" fill="#22d3ee" fontSize="10" fontWeight="bold">참조 코너큐브</text>
+                <text x="290" y="68" textAnchor="middle" fill="#22d3ee" fontSize="9">f₁ 반사</text>
+
+                {/* f₂ 경로 (측정, 오른쪽) */}
+                <line x1="290" y1="205" x2="520" y2="205" stroke="#f472b6" strokeWidth="2" className="glow-pink" strokeDasharray="4,2">
+                  <animate attributeName="stroke-dashoffset" values="0;-12" dur="0.8s" repeatCount="indefinite"/>
+                </line>
+                <polygon points="540,180 540,230 510,205" fill="#0f172a" stroke="#f472b6" strokeWidth="2"/>
+                <text x="555" y="200" fill="#f472b6" fontSize="10" fontWeight="bold">측정 코너큐브</text>
+                <text x="555" y="215" fill="#94a3b8" fontSize="9">(웨이퍼 스테이지)</text>
+                <text x="555" y="230" fill="#64748b" fontSize="9">v: 이동속도</text>
+
+                {/* 도플러 시프트 표시 */}
+                <text x="420" y="195" fill="#fbbf24" fontSize="10" fontStyle="italic">f₂ → f₂ + Δf_doppler</text>
+
+                {/* 결합된 신호가 검출기로 */}
+                <line x1="290" y1="205" x2="290" y2="340" stroke="#a78bfa" strokeWidth="2.5" className="glow-pink">
+                  <animate attributeName="stroke-dasharray" values="0,135;135,0" dur="1.5s" repeatCount="indefinite"/>
+                </line>
+
+                {/* 편광판 (mixer) */}
+                <rect x="260" y="290" width="60" height="6" fill="#fbbf24" opacity="0.6"/>
+                <text x="330" y="295" fill="#fbbf24" fontSize="9">편광 mixer</text>
+
+                {/* 검출기 */}
+                <rect x="260" y="340" width="60" height="40" fill="#0f172a" stroke="#a78bfa" strokeWidth="2" rx="4"/>
+                <text x="290" y="360" textAnchor="middle" fill="#a78bfa" fontSize="11" fontWeight="bold">검출기</text>
+                <text x="290" y="373" textAnchor="middle" fill="#94a3b8" fontSize="9">AC 비트 신호</text>
+
+                {/* 참조 검출기 */}
+                <rect x="20" y="340" width="80" height="40" fill="#0f172a" stroke="#22d3ee" strokeWidth="2" rx="4"/>
+                <text x="60" y="360" textAnchor="middle" fill="#22d3ee" fontSize="10" fontWeight="bold">참조 검출기</text>
+                <text x="60" y="373" textAnchor="middle" fill="#94a3b8" fontSize="9">f₂ − f₁</text>
+
+                {/* 위상 비교기 */}
+                <rect x="450" y="340" width="120" height="60" fill="#0f172a" stroke="#fbbf24" strokeWidth="2" rx="4"/>
+                <text x="510" y="360" textAnchor="middle" fill="#fbbf24" fontSize="11" fontWeight="bold">위상 비교기</text>
+                <text x="510" y="375" textAnchor="middle" fill="#94a3b8" fontSize="9">Phase Meter</text>
+                <text x="510" y="390" textAnchor="middle" fill="#94a3b8" fontSize="9">→ 위치 (sub-nm)</text>
+
+                {/* 연결선 */}
+                <line x1="100" y1="360" x2="260" y2="360" stroke="#64748b" strokeWidth="1" strokeDasharray="3,2"/>
+                <line x1="320" y1="360" x2="450" y2="360" stroke="#64748b" strokeWidth="1" strokeDasharray="3,2"/>
+
+                {/* 수식 박스 - 우상단 */}
+                <rect x="450" y="60" width="230" height="100" fill="#0f172a" stroke="#475569" rx="6" opacity="0.95"/>
+                <text x="460" y="80" fill="#94a3b8" fontSize="10">검출 신호 (AC):</text>
+                <text x="460" y="100" fill="#fbbf24" fontSize="12" fontFamily="monospace">I = I₀cos(2π·Δf·t + φ)</text>
+                <text x="460" y="120" fill="#94a3b8" fontSize="10">Δf = f₂ − f₁ (비트 주파수)</text>
+                <text x="460" y="135" fill="#94a3b8" fontSize="10">φ = 4π·ΔL/λ (측정 위상)</text>
+                <text x="460" y="152" fill="#22d3ee" fontSize="9">→ 시간 영역 위상 측정</text>
+              </svg>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <div className="bg-slate-950/50 border border-amber-900/50 rounded-lg p-4">
+                  <div className="text-amber-400 text-sm font-semibold mb-2">✓ 장점</div>
+                  <ul className="text-slate-300 text-sm space-y-1">
+                    <li>• DC 노이즈 면역 (AC 신호 검출)</li>
+                    <li>• 광원 강도 변동 영향 적음</li>
+                    <li>• 방향성 정보 보존 (도플러)</li>
+                    <li>• Sub-nm 분해능 가능 (λ/4096)</li>
+                    <li>• 실시간 고속 측정 적합</li>
+                  </ul>
+                </div>
+                <div className="bg-slate-950/50 border border-red-900/50 rounded-lg p-4">
+                  <div className="text-red-400 text-sm font-semibold mb-2">✗ 단점</div>
+                  <ul className="text-slate-300 text-sm space-y-1">
+                    <li>• 시스템 복잡도 높음</li>
+                    <li>• Zeeman 레이저/AOM 필요 (비쌈)</li>
+                    <li>• 편광 광학계 정밀 정렬 필요</li>
+                    <li>• 비주기적 비선형 오차 존재</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* 비트 신호 차트 */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-4 text-amber-400">Heterodyne 검출 신호 (AC 비트)</h3>
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={heterodyneData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b"/>
+                  <XAxis dataKey="t" stroke="#64748b" tick={{ fontSize: 10 }} label={{ value: '시간 (μs)', position: 'insideBottom', offset: -5, fill: '#94a3b8' }}/>
+                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} domain={[-1.2, 1.2]} label={{ value: '진폭', angle: -90, position: 'insideLeft', fill: '#94a3b8' }}/>
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '6px' }}/>
+                  <Legend wrapperStyle={{ fontSize: '11px' }}/>
+                  <Line type="monotone" dataKey="beam1" stroke="#22d3ee" strokeWidth={1} dot={false} name="f₁ 빔" opacity={0.5}/>
+                  <Line type="monotone" dataKey="beam2" stroke="#f472b6" strokeWidth={1} dot={false} name="f₂ 빔 (+도플러)" opacity={0.5}/>
+                  <Line type="monotone" dataKey="detected" stroke="#fbbf24" strokeWidth={2.5} dot={false} name="검출된 비트 신호 (Δf)"/>
+                </LineChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-slate-500 mt-2">두 주파수의 합쳐진 신호는 비트 주파수(Δf)로 진동하며, 이 AC 신호의 <span className="text-amber-400">위상</span>이 측정 거리를 직접 나타냄.</p>
+            </div>
+          </div>
+        )}
+
+        {/* 비교 탭 */}
+        {activeTab === 'compare' && (
+          <div className="space-y-6">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h2 className="text-2xl font-bold mb-6 text-pink-400">상세 비교표</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-700">
+                      <th className="text-left py-3 px-2 text-slate-400 text-xs tracking-wider font-medium">구분</th>
+                      <th className="text-left py-3 px-2 text-cyan-400 text-xs tracking-wider font-medium">Michelson</th>
+                      <th className="text-left py-3 px-2 text-amber-400 text-xs tracking-wider font-medium">Heterodyne</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparisonRows.map((row, idx) => (
+                      <tr key={idx} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                        <td className="py-3 px-2 text-slate-200 font-medium">
+                          <span className="mr-2">{row.icon}</span>{row.feature}
+                        </td>
+                        <td className="py-3 px-2 text-slate-300 text-sm">{row.michelson}</td>
+                        <td className="py-3 px-2 text-slate-300 text-sm">{row.heterodyne}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 신호 비교 시각화 */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-4 text-pink-400">📊 검출 신호 형태 비교</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-cyan-400 text-sm font-semibold mb-2">Michelson: DC 강도</div>
+                  <svg viewBox="0 0 300 120" className="w-full bg-slate-950 rounded">
+                    <path d={`M 0 60 ${Array.from({length: 100}, (_, i) => {
+                      const x = i * 3;
+                      const y = 60 - 40 * Math.cos(i * 0.2 + time);
+                      return `L ${x} ${y}`;
+                    }).join(' ')}`} stroke="#22d3ee" strokeWidth="2" fill="none" className="glow-cyan"/>
+                    <line x1="0" y1="60" x2="300" y2="60" stroke="#475569" strokeWidth="0.5" strokeDasharray="2,2"/>
+                    <text x="10" y="115" fill="#64748b" fontSize="10">→ 시간 (광로차 변화시 강도 변동)</text>
+                  </svg>
+                  <p className="text-xs text-slate-500 mt-2">광로차 측정 = 강도→위상 역산 (모호함 존재)</p>
+                </div>
+                <div>
+                  <div className="text-amber-400 text-sm font-semibold mb-2">Heterodyne: AC 비트</div>
+                  <svg viewBox="0 0 300 120" className="w-full bg-slate-950 rounded">
+                    <path d={`M 0 60 ${Array.from({length: 100}, (_, i) => {
+                      const x = i * 3;
+                      const y = 60 - 40 * Math.cos(i * 0.5 + time + phaseShift);
+                      return `L ${x} ${y}`;
+                    }).join(' ')}`} stroke="#fbbf24" strokeWidth="2" fill="none" className="glow-amber"/>
+                    <line x1="0" y1="60" x2="300" y2="60" stroke="#475569" strokeWidth="0.5" strokeDasharray="2,2"/>
+                    <text x="10" y="115" fill="#64748b" fontSize="10">→ 시간 (Δf로 항상 진동, 위상이 위치)</text>
+                  </svg>
+                  <p className="text-xs text-slate-500 mt-2">위상 측정 = 시간차 직접 측정 (정확, 노이즈 면역)</p>
+                </div>
+              </div>
+            </div>
+
+            {/* ASML 응용 */}
+            <div className="bg-gradient-to-br from-slate-900/80 to-slate-900/40 border border-amber-800/40 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="text-3xl">🏭</div>
+                <div>
+                  <h3 className="text-xl font-bold text-amber-400">ASML 노광장비에서의 응용</h3>
+                  <p className="text-xs text-slate-400">영민님의 현장 컨텍스트 — TWINSCAN NXE 시리즈 기준</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-4">
+                  <div className="text-amber-400 text-sm font-semibold mb-2">왜 Heterodyne가 표준인가</div>
+                  <ul className="text-slate-300 text-xs space-y-1.5">
+                    <li>• 웨이퍼 스테이지가 1 m/s 이상 고속 이동 → 도플러 시프트 자연스럽게 활용</li>
+                    <li>• Sub-nm 위치 정확도 요구 (overlay {'<'} 1 nm)</li>
+                    <li>• EUV 챔버 진공·진동 환경에서 강도 노이즈 면역 필수</li>
+                    <li>• 다축 동시 측정 (6-DOF) 시 위상 락 안정성 우수</li>
+                    <li>• Agilent/Zygo/Renishaw 시스템 모두 Heterodyne 기반</li>
+                  </ul>
+                </div>
+                <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-4">
+                  <div className="text-cyan-400 text-sm font-semibold mb-2">Michelson은 어디에?</div>
+                  <ul className="text-slate-300 text-xs space-y-1.5">
+                    <li>• 광학 부품 표면 평탄도 검사 (Fizeau 변형)</li>
+                    <li>• 미러/렌즈 품질 측정 (정적 측정)</li>
+                    <li>• 연구실 광학 정렬 확인</li>
+                    <li>• White-light interferometry (저coherence)</li>
+                    <li>• → 실시간 산업 계측엔 부적합</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-4 p-4 bg-amber-950/20 border-l-4 border-amber-500 rounded">
+                <div className="text-amber-400 text-sm font-semibold mb-1">💡 현장 인사이트</div>
+                <p className="text-slate-300 text-xs leading-relaxed">
+                  ASML TWINSCAN의 웨이퍼 스테이지 위치는 Zeeman-split HeNe (~3 MHz 비트 주파수) 기반 다축 heterodyne 간섭계로 측정됩니다. 
+                  최근 일부 시스템은 공기 굴절률 변동 보정을 위해 진공 빔파이프 또는 grating-based encoder (IPRO/ATHENA)와 하이브리드로 운영되는 추세입니다. 
+                  Heterodyne의 한계인 비선형 오차(periodic error)는 PBS 누설로 발생하며, 일반적으로 λ/512 ~ λ/2048 수준입니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 푸터 */}
+        <footer className="mt-8 pt-6 border-t border-slate-800 text-center">
+          <p className="text-xs text-slate-500">
+            Interferometer Comparison Dashboard · 한국어 인터랙티브 시각화 · 
+            <span className="text-slate-400 ml-1">함영민님을 위해 제작 (포토 공정 + ASML 컨텍스트)</span>
+          </p>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(<InterferometerComparison />);
+  </script>
+</body>
+</html>

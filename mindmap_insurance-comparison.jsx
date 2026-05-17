@@ -1,0 +1,607 @@
+import { useState } from "react";
+
+const data = {
+  samsung: {
+    name: "삼성화재",
+    premium: 19102,
+    color: "#3B82F6",
+    gradient: "linear-gradient(135deg, #1e3a5f 0%, #3B82F6 100%)",
+    badge: "클레임 처리 최강",
+    consumerGrade: "양호",
+    items: [
+      { cat: "화재", label: "화재손해(건물)", value: "3억원", cost: 8400 },
+      { cat: "화재", label: "화재손해(가재)", value: "5,000만원", cost: 1400 },
+      { cat: "화재", label: "화재 임시거주비", value: "1일 10만원", cost: 220 },
+      { cat: "화재", label: "가족 화재정리", value: "2,000만원", cost: 11 },
+      { cat: "화재", label: "주택 복구비용지원", value: "6,000만원", cost: 1800 },
+      { cat: "풍수재", label: "풍수재손해", value: "3억원", cost: 600 },
+      { cat: "배상", label: "특수건물 화재대물배상", value: "10억원", cost: 18 },
+      { cat: "배상", label: "특수건물 신체손해배상", value: "1억5,000만원", cost: 540 },
+      { cat: "배상", label: "일배책(1인/1사고)", value: "1억원", cost: 2655 },
+      { cat: "누수", label: "급배수시설누출손해", value: "500만원 (자부담10%)", cost: 1696 },
+      { cat: "누수", label: "급배수누출 임시거주비", value: "미포함", cost: 0 },
+      { cat: "도난", label: "도난손해", value: "미가입", cost: 0 },
+      { cat: "법률", label: "민사소송 법률비용", value: "2,000만원", cost: 1732 },
+      { cat: "상해", label: "상해 후유장해(80%↑)", value: "1,000만원", cost: 30 },
+      { cat: "의료", label: "가족 의료비금", value: "미포함", cost: 0 },
+    ],
+  },
+  hyundai: {
+    name: "현대해상",
+    premium: 15000,
+    color: "#F59E0B",
+    gradient: "linear-gradient(135deg, #78350f 0%, #F59E0B 100%)",
+    badge: "보장 범위 최강",
+    consumerGrade: "보통",
+    items: [
+      { cat: "화재", label: "화재손해(건물)", value: "3억원", cost: null },
+      { cat: "화재", label: "화재손해(가재)", value: "6,000만원", cost: null },
+      { cat: "화재", label: "화재 임시거주비", value: "1일 10만원", cost: null },
+      { cat: "화재", label: "화재임시주택", value: "1,000만원", cost: null },
+      { cat: "화재", label: "건물복구비용지원", value: "3억원", cost: null },
+      { cat: "풍수재", label: "풍수재손해", value: "3.5억원", cost: null },
+      { cat: "배상", label: "화재대물/신체배상", value: "포함", cost: null },
+      { cat: "배상", label: "일상생활배상책임", value: "포함 (통합)", cost: null },
+      { cat: "배상", label: "일배책(1인/1사고)", value: "1억원", cost: null },
+      { cat: "누수", label: "급배수시설누출손해", value: "보장 포함", cost: null },
+      { cat: "누수", label: "급배수누출 임시거주비", value: "1일 25만원 (NEW)", cost: null },
+      { cat: "도난", label: "도난손해", value: "5,000만원", cost: null },
+      { cat: "법률", label: "민사소송 법률비용", value: "특약 선택", cost: null },
+      { cat: "상해", label: "상해 후유장해", value: "기본계약 포함", cost: null },
+      { cat: "의료", label: "가족 의료비금", value: "2,000만원", cost: null },
+    ],
+  },
+};
+
+const comparisonRows = [
+  { label: "화재손해(건물)", s: "3억원", h: "3억원", winner: "tie" },
+  { label: "화재손해(가재)", s: "5,000만원", h: "6,000만원", winner: "h" },
+  { label: "풍수재손해", s: "3억원", h: "3.5억원", winner: "h" },
+  { label: "건물복구비용", s: "6,000만원", h: "3억원", winner: "h" },
+  { label: "화재 임시거주비", s: "1일 10만원", h: "1일 10만원", winner: "tie" },
+  { label: "붕괴·침수 임시거주비", s: "1일 10만원", h: "1일 25만원", winner: "h" },
+  { label: "급배수누출 임시거주비", s: "미포함", h: "1일 25만원", winner: "h" },
+  { label: "일배책 한도", s: "1억원", h: "1억원", winner: "tie" },
+  { label: "급배수시설누출손해", s: "500만원", h: "보장 포함", winner: "tie" },
+  { label: "도난손해", s: "미가입", h: "5,000만원", winner: "h" },
+  { label: "민사소송 법률비용", s: "2,000만원", h: "특약 선택", winner: "s" },
+  { label: "가족 의료비금", s: "미포함", h: "2,000만원", winner: "h" },
+  { label: "상해 후유장해", s: "1,000만원", h: "기본계약 포함", winner: "tie" },
+];
+
+const categories = ["전체", "화재", "풍수재", "배상", "누수", "도난", "법률"];
+
+const strengths = {
+  samsung: [
+    { icon: "⚖️", title: "민사소송 법률비용 2,000만원", desc: "전월세 분쟁·층간소음 소송 등 일상 법적 분쟁 대비" },
+    { icon: "⚡", title: "보험금 3일 내 지급률 99%", desc: "업계 최고 수준 클레임 처리 속도" },
+    { icon: "🛡️", title: "금감원 소비자보호 '양호'", desc: "손보사 중 2곳만 획득 (삼성화재·KB손보)" },
+    { icon: "🏆", title: "KCSI 26년 연속 1위", desc: "장기간 검증된 고객 만족도" },
+  ],
+  hyundai: [
+    { icon: "🏠", title: "건물복구비용 3억원", desc: "삼성 6,000만원 대비 5배, 대형 화재 시 결정적 차이" },
+    { icon: "🔒", title: "도난손해 5,000만원", desc: "삼성화재 미가입 — 1층·빌라 거주 시 필수" },
+    { icon: "💧", title: "급배수 누출 임시거주비", desc: "1일 25만원 — 삼성화재 미포함" },
+    { icon: "💰", title: "월 4,100원 절약", desc: "연간 약 49,200원, 10년간 약 49만원 차이" },
+  ],
+};
+
+const checklist = [
+  { text: "급배수시설누출손해 대기기간 확인 (삼성 90일)", done: false },
+  { text: "건물 연식 제한 확인 (현대 30년 미만)", done: false },
+  { text: "보험가액 = 실제 건물·가재 가치로 설정", done: false },
+  { text: "기존 일배책 중복 가입 여부 (파인 사이트)", done: false },
+  { text: "이사 시 보험사 주소 변경 통지 필수", done: false },
+];
+
+export default function InsuranceComparison() {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [selectedCat, setSelectedCat] = useState("전체");
+  const [checks, setChecks] = useState(checklist.map(() => false));
+
+  const toggleCheck = (i) => {
+    const next = [...checks];
+    next[i] = !next[i];
+    setChecks(next);
+  };
+
+  const filtered = comparisonRows.filter(
+    (r) => selectedCat === "전체" || getCat(r.label) === selectedCat
+  );
+
+  function getCat(label) {
+    if (label.includes("화재") || label.includes("복구") || label.includes("임시")) {
+      if (label.includes("급배수") || label.includes("누출")) return "누수";
+      if (label.includes("붕괴") || label.includes("침수")) return "화재";
+      return "화재";
+    }
+    if (label.includes("풍수재")) return "풍수재";
+    if (label.includes("일배책") || label.includes("배상")) return "배상";
+    if (label.includes("도난")) return "도난";
+    if (label.includes("법률") || label.includes("소송")) return "법률";
+    return "전체";
+  }
+
+  const sWins = comparisonRows.filter((r) => r.winner === "s").length;
+  const hWins = comparisonRows.filter((r) => r.winner === "h").length;
+  const ties = comparisonRows.filter((r) => r.winner === "tie").length;
+
+  const tabs = [
+    { id: "overview", label: "종합 비교" },
+    { id: "detail", label: "항목별 상세" },
+    { id: "strengths", label: "강점 분석" },
+    { id: "verdict", label: "최종 판단" },
+  ];
+
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "#0a0e1a",
+      color: "#e2e8f0",
+      fontFamily: "'Pretendard', 'Noto Sans KR', -apple-system, sans-serif",
+      padding: "0",
+      overflow: "hidden",
+    }}>
+      <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet" />
+
+      {/* Header */}
+      <div style={{
+        background: "linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(10,14,26,1) 100%)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        padding: "32px 24px 0",
+      }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <span style={{ fontSize: 11, letterSpacing: 3, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>Insurance Comparison Report</span>
+          </div>
+          <h1 style={{
+            fontSize: 28,
+            fontWeight: 800,
+            margin: "0 0 6px",
+            background: "linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            lineHeight: 1.3,
+          }}>
+            삼성화재 vs 현대해상
+          </h1>
+          <p style={{ color: "#64748b", fontSize: 14, margin: "0 0 24px", lineHeight: 1.5 }}>
+            다이렉트 화재보험 + 일배책 · 월 {data.samsung.premium.toLocaleString()}원 vs {data.hyundai.premium.toLocaleString()}원
+          </p>
+
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 0, borderBottom: "none" }}>
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                style={{
+                  padding: "10px 20px",
+                  fontSize: 13,
+                  fontWeight: activeTab === t.id ? 700 : 500,
+                  color: activeTab === t.id ? "#e2e8f0" : "#64748b",
+                  background: activeTab === t.id ? "rgba(255,255,255,0.06)" : "transparent",
+                  border: "1px solid",
+                  borderColor: activeTab === t.id ? "rgba(255,255,255,0.1)" : "transparent",
+                  borderBottom: activeTab === t.id ? "1px solid #0a0e1a" : "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "8px 8px 0 0",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  position: "relative",
+                  bottom: -1,
+                  fontFamily: "inherit",
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 24px 48px" }}>
+
+        {/* ===== OVERVIEW TAB ===== */}
+        {activeTab === "overview" && (
+          <div>
+            {/* Premium Cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+              {["samsung", "hyundai"].map((key) => {
+                const d = data[key];
+                return (
+                  <div key={key} style={{
+                    background: `linear-gradient(135deg, ${key === "samsung" ? "rgba(59,130,246,0.08)" : "rgba(245,158,11,0.08)"} 0%, rgba(255,255,255,0.02) 100%)`,
+                    border: `1px solid ${key === "samsung" ? "rgba(59,130,246,0.2)" : "rgba(245,158,11,0.2)"}`,
+                    borderRadius: 12,
+                    padding: 20,
+                    position: "relative",
+                    overflow: "hidden",
+                  }}>
+                    <div style={{
+                      position: "absolute", top: 12, right: 12,
+                      background: d.color, color: "#000",
+                      fontSize: 10, fontWeight: 700, padding: "3px 8px",
+                      borderRadius: 4, letterSpacing: 0.5,
+                    }}>
+                      {d.badge}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 4, fontWeight: 600 }}>{d.name} 다이렉트</div>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: d.color, marginBottom: 8 }}>
+                      월 {d.premium.toLocaleString()}<span style={{ fontSize: 16, fontWeight: 500 }}>원</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#64748b" }}>
+                      <span>갱신주기 10년</span>
+                      <span>·</span>
+                      <span>금감원 {d.consumerGrade}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Score Summary */}
+            <div style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 12,
+              padding: 20,
+              marginBottom: 24,
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, color: "#94a3b8", letterSpacing: 1 }}>
+                보장 항목 승패 ({comparisonRows.length}개 항목)
+              </div>
+              <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    height: 8, borderRadius: 4,
+                    background: `linear-gradient(90deg, #3B82F6 0%, #3B82F6 ${(sWins / comparisonRows.length) * 100}%, #1e293b ${(sWins / comparisonRows.length) * 100}%, #1e293b ${((sWins + ties) / comparisonRows.length) * 100}%, #F59E0B ${((sWins + ties) / comparisonRows.length) * 100}%, #F59E0B 100%)`,
+                  }} />
+                </div>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                <div style={{ color: "#3B82F6", fontWeight: 700 }}>삼성 우위 {sWins}건</div>
+                <div style={{ color: "#64748b" }}>동등 {ties}건</div>
+                <div style={{ color: "#F59E0B", fontWeight: 700 }}>현대 우위 {hWins}건</div>
+              </div>
+            </div>
+
+            {/* Key Differences */}
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#e2e8f0" }}>핵심 차이 요약</div>
+            {[
+              { label: "건물복구비용", s: "6,000만원", h: "3억원", note: "현대 5배", accent: "#F59E0B" },
+              { label: "도난손해", s: "미가입", h: "5,000만원", note: "현대만 보장", accent: "#F59E0B" },
+              { label: "민사소송 법률비용", s: "2,000만원", h: "특약 선택", note: "삼성 기본포함", accent: "#3B82F6" },
+              { label: "급배수 임시거주비", s: "미포함", h: "1일 25만원", note: "현대만 보장", accent: "#F59E0B" },
+              { label: "일배책 한도", s: "1억원", h: "1억원", note: "양사 동일", accent: "#64748b" },
+            ].map((item, i) => (
+              <div key={i} style={{
+                display: "grid",
+                gridTemplateColumns: "140px 1fr 1fr 90px",
+                alignItems: "center",
+                padding: "12px 16px",
+                background: i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent",
+                borderRadius: 8,
+                fontSize: 13,
+                gap: 8,
+              }}>
+                <span style={{ color: "#94a3b8", fontWeight: 600 }}>{item.label}</span>
+                <span style={{ color: "#3B82F6" }}>{item.s}</span>
+                <span style={{ color: "#F59E0B" }}>{item.h}</span>
+                <span style={{
+                  fontSize: 11, fontWeight: 700, color: item.accent,
+                  background: `${item.accent}15`,
+                  padding: "2px 8px", borderRadius: 4, textAlign: "center",
+                }}>{item.note}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ===== DETAIL TAB ===== */}
+        {activeTab === "detail" && (
+          <div>
+            {/* Category Filter */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCat(cat)}
+                  style={{
+                    padding: "6px 14px",
+                    fontSize: 12,
+                    fontWeight: selectedCat === cat ? 700 : 500,
+                    color: selectedCat === cat ? "#0a0e1a" : "#94a3b8",
+                    background: selectedCat === cat ? "#e2e8f0" : "rgba(255,255,255,0.04)",
+                    border: "1px solid",
+                    borderColor: selectedCat === cat ? "#e2e8f0" : "rgba(255,255,255,0.08)",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Comparison Table */}
+            <div style={{
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 12,
+              overflow: "hidden",
+            }}>
+              {/* Table Header */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                padding: "12px 16px",
+                background: "rgba(255,255,255,0.04)",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#64748b",
+                letterSpacing: 1,
+              }}>
+                <span>보장 항목</span>
+                <span style={{ color: "#3B82F6" }}>삼성화재</span>
+                <span style={{ color: "#F59E0B" }}>현대해상</span>
+              </div>
+
+              {filtered.map((row, i) => (
+                <div key={i} style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  padding: "14px 16px",
+                  borderBottom: i < filtered.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                  fontSize: 13,
+                  alignItems: "center",
+                  background: row.winner === "s"
+                    ? "rgba(59,130,246,0.04)"
+                    : row.winner === "h"
+                    ? "rgba(245,158,11,0.04)"
+                    : "transparent",
+                }}>
+                  <span style={{ color: "#94a3b8", fontWeight: 600, fontSize: 12 }}>{row.label}</span>
+                  <span style={{
+                    color: row.winner === "s" ? "#3B82F6" : row.s.includes("미") ? "#475569" : "#cbd5e1",
+                    fontWeight: row.winner === "s" ? 700 : 400,
+                  }}>
+                    {row.winner === "s" && <span style={{ marginRight: 4 }}>●</span>}
+                    {row.s}
+                  </span>
+                  <span style={{
+                    color: row.winner === "h" ? "#F59E0B" : row.h.includes("특약") ? "#475569" : "#cbd5e1",
+                    fontWeight: row.winner === "h" ? 700 : 400,
+                  }}>
+                    {row.winner === "h" && <span style={{ marginRight: 4 }}>●</span>}
+                    {row.h}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Samsung Cost Breakdown */}
+            <div style={{ marginTop: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#e2e8f0" }}>
+                삼성화재 보험료 구성 (월 {data.samsung.premium.toLocaleString()}원)
+              </div>
+              <div style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 12,
+                padding: 16,
+              }}>
+                {data.samsung.items
+                  .filter((it) => it.cost > 0)
+                  .sort((a, b) => b.cost - a.cost)
+                  .map((item, i) => {
+                    const pct = (item.cost / data.samsung.premium) * 100;
+                    return (
+                      <div key={i} style={{ marginBottom: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                          <span style={{ color: "#94a3b8" }}>{item.label}</span>
+                          <span style={{ color: "#3B82F6", fontWeight: 600 }}>
+                            {item.cost.toLocaleString()}원 ({pct.toFixed(1)}%)
+                          </span>
+                        </div>
+                        <div style={{
+                          height: 4, background: "rgba(255,255,255,0.04)", borderRadius: 2,
+                        }}>
+                          <div style={{
+                            height: "100%", width: `${pct}%`, background: "#3B82F6",
+                            borderRadius: 2, transition: "width 0.5s ease",
+                          }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== STRENGTHS TAB ===== */}
+        {activeTab === "strengths" && (
+          <div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              {["samsung", "hyundai"].map((key) => (
+                <div key={key}>
+                  <div style={{
+                    fontSize: 14, fontWeight: 700, marginBottom: 12,
+                    color: key === "samsung" ? "#3B82F6" : "#F59E0B",
+                    display: "flex", alignItems: "center", gap: 8,
+                  }}>
+                    <div style={{
+                      width: 4, height: 16, borderRadius: 2,
+                      background: key === "samsung" ? "#3B82F6" : "#F59E0B",
+                    }} />
+                    {data[key].name} 강점
+                  </div>
+                  {strengths[key].map((s, i) => (
+                    <div key={i} style={{
+                      background: "rgba(255,255,255,0.02)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: 10,
+                      padding: 16,
+                      marginBottom: 10,
+                    }}>
+                      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                        <span style={{ fontSize: 20 }}>{s.icon}</span>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", marginBottom: 4 }}>
+                            {s.title}
+                          </div>
+                          <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>
+                            {s.desc}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            {/* Weakness Section */}
+            <div style={{ marginTop: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#e2e8f0" }}>주의사항</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div style={{
+                  background: "rgba(239,68,68,0.04)",
+                  border: "1px solid rgba(239,68,68,0.15)",
+                  borderRadius: 10, padding: 16,
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#3B82F6", marginBottom: 8 }}>삼성화재</div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.7 }}>
+                    • 플랜형 구성 → 세부 담보 금액 조정 제한<br />
+                    • 급배수시설누출 90일 대기기간<br />
+                    • 도난손해 미가입 상태
+                  </div>
+                </div>
+                <div style={{
+                  background: "rgba(239,68,68,0.04)",
+                  border: "1px solid rgba(239,68,68,0.15)",
+                  borderRadius: 10, padding: 16,
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#F59E0B", marginBottom: 8 }}>현대해상</div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.7 }}>
+                    • 급배수 담보 건축 후 30년 미만 제한<br />
+                    • 층간소음 보장 건축 후 20년 이하만<br />
+                    • 금감원 실태평가 '보통' 등급
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== VERDICT TAB ===== */}
+        {activeTab === "verdict" && (
+          <div>
+            {/* Verdict Card */}
+            <div style={{
+              background: "linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(255,255,255,0.02) 100%)",
+              border: "1px solid rgba(245,158,11,0.2)",
+              borderRadius: 14,
+              padding: 24,
+              marginBottom: 24,
+            }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: "#F59E0B",
+                letterSpacing: 2, marginBottom: 8,
+              }}>
+                종합 추천
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#e2e8f0", marginBottom: 12 }}>
+                현대해상 다이렉트가 대다수 가입자에게 더 합리적
+              </div>
+              <div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.8 }}>
+                월 4,100원 절약 + 도난 5,000만원 + 건물복구비용 5배(3억원) + 급배수 누출 임시거주비(1일 25만원).
+                일배책은 양사 동일 1억원이므로 이 항목에서의 차이는 없다.
+              </div>
+            </div>
+
+            {/* Exception Card */}
+            <div style={{
+              background: "linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(255,255,255,0.02) 100%)",
+              border: "1px solid rgba(59,130,246,0.2)",
+              borderRadius: 14,
+              padding: 24,
+              marginBottom: 24,
+            }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: "#3B82F6",
+                letterSpacing: 2, marginBottom: 8,
+              }}>
+                삼성화재를 선택해야 하는 경우
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#e2e8f0", marginBottom: 12 }}>
+                법률 소송 가능성이 높거나, 클레임 처리 품질을 최우선시할 때
+              </div>
+              <div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.8 }}>
+                전월세 분쟁·이웃 갈등 등 법률 소송 가능성이 현실적으로 높다면 민사소송 법률비용 2,000만원 특약의 가치는
+                연간 약 5만원의 보험료 차이를 충분히 상쇄한다. 금감원 '양호' 등급 + 3일 내 99% 지급.
+              </div>
+            </div>
+
+            {/* Checklist */}
+            <div style={{
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 14,
+              padding: 24,
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#e2e8f0", marginBottom: 16 }}>
+                가입 전 체크리스트
+              </div>
+              {checklist.map((item, i) => (
+                <div
+                  key={i}
+                  onClick={() => toggleCheck(i)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "10px 0",
+                    borderBottom: i < checklist.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                    cursor: "pointer",
+                    userSelect: "none",
+                  }}
+                >
+                  <div style={{
+                    width: 20, height: 20, borderRadius: 4,
+                    border: checks[i] ? "none" : "2px solid rgba(255,255,255,0.15)",
+                    background: checks[i] ? "#10b981" : "transparent",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0, transition: "all 0.15s",
+                    fontSize: 12, color: "#fff",
+                  }}>
+                    {checks[i] && "✓"}
+                  </div>
+                  <span style={{
+                    fontSize: 13,
+                    color: checks[i] ? "#64748b" : "#cbd5e1",
+                    textDecoration: checks[i] ? "line-through" : "none",
+                    transition: "all 0.15s",
+                  }}>
+                    {item.text}
+                  </span>
+                </div>
+              ))}
+              <div style={{
+                marginTop: 16, padding: "10px 14px",
+                background: "rgba(16,185,129,0.08)",
+                borderRadius: 8,
+                fontSize: 12, color: "#10b981",
+                fontWeight: 600,
+              }}>
+                {checks.filter(Boolean).length}/{checklist.length} 완료
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

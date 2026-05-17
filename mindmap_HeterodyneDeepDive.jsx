@@ -1,0 +1,712 @@
+import React, { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+
+export default function HeterodyneDeepDive() {
+  const [activeSection, setActiveSection] = useState('analogy');
+  const [time, setTime] = useState(0);
+  const [doppler, setDoppler] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(t => t + 0.08);
+    }, 40);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 비트 패턴 데이터 생성 (두 주파수의 합)
+  const generateBeatData = () => {
+    const data = [];
+    const f1 = 5.0;
+    const f2 = 5.3;
+    for (let t = 0; t <= 4; t += 0.02) {
+      const wave1 = Math.cos(2 * Math.PI * f1 * t);
+      const wave2 = Math.cos(2 * Math.PI * f2 * t);
+      const sum = wave1 + wave2;
+      const envelope = 2 * Math.abs(Math.cos(Math.PI * (f2 - f1) * t));
+      data.push({
+        t: t.toFixed(2),
+        wave1: wave1,
+        wave2: wave2,
+        sum: sum,
+        envelopeUp: envelope,
+        envelopeDown: -envelope,
+      });
+    }
+    return data;
+  };
+
+  // 도플러 데모: 거울 움직임에 따른 위상 변화
+  const generateDopplerData = () => {
+    const data = [];
+    const baseFreq = 2.0;
+    const dopplerShift = doppler * 0.1;
+    for (let t = 0; t <= 10; t += 0.05) {
+      const reference = Math.cos(2 * Math.PI * baseFreq * t);
+      const measurement = Math.cos(2 * Math.PI * (baseFreq + dopplerShift) * t);
+      const beat = 0.5 + 0.5 * Math.cos(2 * Math.PI * dopplerShift * t);
+      data.push({
+        t: t.toFixed(2),
+        beat: beat,
+      });
+    }
+    return data;
+  };
+
+  // 기술 비교 데이터
+  const techComparison = [
+    {
+      name: 'Michelson\n(Homodyne)',
+      resolution: 100,
+      speed: 30,
+      cost: 20,
+      robustness: 25,
+      era: '1881~',
+      gen: 1,
+    },
+    {
+      name: 'Heterodyne\nLaser Interferometer',
+      resolution: 0.5,
+      speed: 80,
+      cost: 60,
+      robustness: 60,
+      era: '1970~',
+      gen: 2,
+    },
+    {
+      name: 'Heterodyne\nGrating Encoder',
+      resolution: 0.22,
+      speed: 95,
+      cost: 70,
+      robustness: 90,
+      era: '2009~ ASML',
+      gen: 3,
+    },
+    {
+      name: 'Optical Frequency\nComb (OFC)',
+      resolution: 0.01,
+      speed: 70,
+      cost: 95,
+      robustness: 75,
+      era: '2025~',
+      gen: 4,
+    },
+  ];
+
+  const beatData = generateBeatData();
+  const dopplerData = generateDopplerData();
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-6" style={{ fontFamily: "'Pretendard', 'Noto Sans KR', system-ui, sans-serif" }}>
+      <style>{`
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        .glow-amber { filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5)); }
+        .glow-cyan { filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.5)); }
+        .glow-pink { filter: drop-shadow(0 0 8px rgba(244, 114, 182, 0.5)); }
+        .glow-green { filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.5)); }
+        .glow-violet { filter: drop-shadow(0 0 10px rgba(167, 139, 250, 0.6)); }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .shimmer {
+          background: linear-gradient(90deg, transparent, rgba(251,191,36,0.15), transparent);
+          background-size: 200% 100%;
+          animation: shimmer 3s linear infinite;
+        }
+      `}</style>
+
+      <div className="max-w-7xl mx-auto">
+        {/* 헤더 */}
+        <header className="mb-8 border-l-4 border-amber-400 pl-6">
+          <div className="text-xs tracking-[0.3em] text-amber-400 mb-2">DEEP DIVE · 헤테로다인 완전 정복</div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-tight">
+            Heterodyne <span className="text-slate-500">의 원리와</span>{' '}
+            <span className="bg-gradient-to-r from-amber-400 to-pink-400 bg-clip-text text-transparent">차세대 기술</span>
+          </h1>
+          <p className="text-slate-400 text-lg">비유로 풀어보는 헤테로다인의 본질, 그리고 그 너머의 계측 기술</p>
+        </header>
+
+        {/* 네비게이션 */}
+        <div className="flex flex-wrap gap-2 mb-6 border-b border-slate-800">
+          {[
+            { id: 'analogy', label: '01 · 비유로 이해하기', color: '#fbbf24' },
+            { id: 'beat', label: '02 · 비트 신호의 마법', color: '#22d3ee' },
+            { id: 'why', label: '03 · 왜 강력한가', color: '#f472b6' },
+            { id: 'nextgen', label: '04 · 차세대 기술', color: '#a78bfa' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSection(tab.id)}
+              className="px-5 py-3 text-sm font-medium tracking-wide transition-all"
+              style={{
+                color: activeSection === tab.id ? tab.color : '#64748b',
+                borderBottom: activeSection === tab.id ? `2px solid ${tab.color}` : '2px solid transparent',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 섹션 1: 비유로 이해하기 */}
+        {activeSection === 'analogy' && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-br from-amber-950/30 to-slate-900/60 border border-amber-800/40 rounded-xl p-6">
+              <h2 className="text-2xl font-bold mb-2 text-amber-400">🎵 핵심 비유: 피아노의 "맥놀이(Beat)"</h2>
+              <p className="text-slate-300 mb-6 leading-relaxed">
+                두 개의 거의 같은 음높이를 동시에 치면 "워어엉~ 워어엉~" 하는 느린 진동이 들립니다. 
+                이게 바로 <span className="text-amber-400 font-semibold">맥놀이(beat)</span>이며, 헤테로다인의 모든 것입니다.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-slate-950/60 border border-amber-900/30 rounded-lg p-4">
+                  <div className="text-3xl mb-2">🎹</div>
+                  <div className="text-amber-400 font-semibold mb-2">440 Hz (A음)</div>
+                  <div className="text-xs text-slate-400">기준이 되는 첫 번째 음</div>
+                </div>
+                <div className="bg-slate-950/60 border border-amber-900/30 rounded-lg p-4">
+                  <div className="text-3xl mb-2">🎹</div>
+                  <div className="text-pink-400 font-semibold mb-2">443 Hz (살짝 높은 A)</div>
+                  <div className="text-xs text-slate-400">살짝 다른 두 번째 음</div>
+                </div>
+                <div className="bg-slate-950/60 border border-amber-900/30 rounded-lg p-4">
+                  <div className="text-3xl mb-2">👂</div>
+                  <div className="text-cyan-400 font-semibold mb-2">3 Hz 맥놀이</div>
+                  <div className="text-xs text-slate-400">초당 3번 "와~앙" 진동</div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-slate-950/80 border-l-4 border-amber-500 rounded">
+                <div className="text-amber-300 text-sm font-semibold mb-2">💡 핵심 통찰</div>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  사람 귀는 440 Hz나 443 Hz를 정확히 구분 못 합니다. 너무 빨라서요. 
+                  그런데 두 소리의 <span className="text-amber-400 font-bold">차이인 3 Hz</span>는 "와~앙 와~앙" 하고 명확히 들립니다.
+                  <br/><br/>
+                  헤테로다인도 똑같습니다. 빛의 주파수(~474 THz)는 너무 빨라서 어떤 전자장치도 못 따라갑니다. 
+                  하지만 두 빛의 <span className="text-amber-400 font-bold">차이(~3 MHz)</span>는 일반적인 광검출기가 충분히 측정할 수 있는 속도입니다.
+                </p>
+              </div>
+            </div>
+
+            {/* 빛의 주파수 시각화 */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h3 className="text-xl font-bold mb-4 text-cyan-400">🌈 빛의 주파수: 왜 직접 측정 불가능한가?</h3>
+              
+              <svg viewBox="0 0 700 240" className="w-full bg-slate-950 rounded-lg border border-slate-800">
+                {/* 빛 주파수 */}
+                <g>
+                  <text x="20" y="35" fill="#22d3ee" fontSize="13" fontWeight="bold">빛의 주파수 f₁ (HeNe 레이저)</text>
+                  <text x="20" y="52" fill="#94a3b8" fontSize="10">~474,000,000,000,000 Hz (474 THz)</text>
+                  <path d={`M 20 80 ${Array.from({length: 660}, (_, i) => {
+                    const x = 20 + i;
+                    const y = 80 - 12 * Math.cos(i * 0.8);
+                    return `L ${x} ${y}`;
+                  }).join(' ')}`} stroke="#22d3ee" strokeWidth="1.5" fill="none" className="glow-cyan"/>
+                  <text x="690" y="85" textAnchor="end" fill="#64748b" fontSize="9">너무 빨라서 검출기가 못 따라감 ❌</text>
+                </g>
+
+                {/* 빛 주파수 f2 */}
+                <g>
+                  <text x="20" y="115" fill="#f472b6" fontSize="13" fontWeight="bold">빛의 주파수 f₂ (Zeeman 분리)</text>
+                  <text x="20" y="132" fill="#94a3b8" fontSize="10">~474,000,003,000,000 Hz (f₁ + 3 MHz)</text>
+                  <path d={`M 20 160 ${Array.from({length: 660}, (_, i) => {
+                    const x = 20 + i;
+                    const y = 160 - 12 * Math.cos(i * 0.82);
+                    return `L ${x} ${y}`;
+                  }).join(' ')}`} stroke="#f472b6" strokeWidth="1.5" fill="none" className="glow-pink"/>
+                  <text x="690" y="165" textAnchor="end" fill="#64748b" fontSize="9">마찬가지로 측정 불가 ❌</text>
+                </g>
+
+                {/* 화살표 */}
+                <text x="350" y="200" textAnchor="middle" fill="#fbbf24" fontSize="14">↓ 두 빔을 합치면 (BS에서 간섭) ↓</text>
+                
+                {/* 비트 신호 */}
+                <g transform="translate(0, 215)">
+                  <text x="350" y="0" textAnchor="middle" fill="#fbbf24" fontSize="13" fontWeight="bold">→ 비트 주파수 3 MHz (광검출기로 측정 가능 ✓)</text>
+                </g>
+              </svg>
+
+              <p className="text-xs text-slate-400 mt-4 leading-relaxed">
+                광검출기는 보통 ~10 MHz 정도까지 응답합니다. 빛의 주파수 자체는 측정 불가능하지만, 
+                두 빛의 <span className="text-amber-400">차이 주파수</span>는 광검출기 응답 범위 안으로 떨어져 측정 가능해집니다. 
+                이것이 헤테로다인이 "주파수 변환"이라 불리는 이유입니다.
+              </p>
+            </div>
+
+            {/* 라디오 비유 */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h3 className="text-xl font-bold mb-4 text-green-400">📻 또 다른 비유: 라디오 수신기</h3>
+              <p className="text-slate-300 mb-4">
+                실제로 "헤테로다인"이라는 용어는 1901년 라디오 공학에서 유래했습니다. 라디오 수신기 안에서 일어나는 일과 똑같은 원리입니다.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-slate-950/60 border border-green-900/30 rounded-lg p-4">
+                  <div className="text-green-400 text-sm font-semibold mb-2">📡 라디오에서</div>
+                  <div className="text-sm text-slate-300 space-y-1">
+                    <div>• 안테나로 들어온 신호: <span className="text-cyan-400">98.5 MHz</span></div>
+                    <div>• 내부 발진기(LO): <span className="text-pink-400">88.5 MHz</span></div>
+                    <div>• 믹서 통과 후: <span className="text-amber-400">10.7 MHz (IF)</span></div>
+                    <div className="text-xs text-slate-500 pt-2">→ 처리하기 쉬운 중간주파수로 변환</div>
+                  </div>
+                </div>
+                <div className="bg-slate-950/60 border border-amber-900/30 rounded-lg p-4">
+                  <div className="text-amber-400 text-sm font-semibold mb-2">🔬 헤테로다인 간섭계에서</div>
+                  <div className="text-sm text-slate-300 space-y-1">
+                    <div>• 측정 빔: <span className="text-cyan-400">474.000003 THz</span></div>
+                    <div>• 참조 빔(LO): <span className="text-pink-400">474.000000 THz</span></div>
+                    <div>• 검출기에서: <span className="text-amber-400">3 MHz 비트</span></div>
+                    <div className="text-xs text-slate-500 pt-2">→ 광학 주파수를 전기 영역으로 다운컨버전</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 섹션 2: 비트 신호의 마법 */}
+        {activeSection === 'beat' && (
+          <div className="space-y-6">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h2 className="text-2xl font-bold mb-2 text-cyan-400">두 파동이 합쳐지면 어떻게 비트가 생기는가</h2>
+              <p className="text-slate-400 mb-6">아래 차트에서 두 빛의 파형이 합쳐져 <span className="text-amber-400">맥놀이 포락선(envelope)</span>이 만들어지는 것을 직접 보실 수 있습니다.</p>
+
+              <ResponsiveContainer width="100%" height={320}>
+                <LineChart data={beatData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b"/>
+                  <XAxis dataKey="t" stroke="#64748b" tick={{ fontSize: 10 }} label={{ value: '시간', position: 'insideBottom', offset: -5, fill: '#94a3b8' }}/>
+                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} domain={[-2.5, 2.5]}/>
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155' }}/>
+                  <Legend wrapperStyle={{ fontSize: '11px' }}/>
+                  <Line type="monotone" dataKey="wave1" stroke="#22d3ee" strokeWidth={1} dot={false} name="빔 1 (f₁)" opacity={0.4}/>
+                  <Line type="monotone" dataKey="wave2" stroke="#f472b6" strokeWidth={1} dot={false} name="빔 2 (f₂)" opacity={0.4}/>
+                  <Line type="monotone" dataKey="sum" stroke="#fbbf24" strokeWidth={2} dot={false} name="합쳐진 신호 (검출됨)"/>
+                  <Line type="monotone" dataKey="envelopeUp" stroke="#a78bfa" strokeWidth={1.5} dot={false} name="맥놀이 포락선" strokeDasharray="5,3"/>
+                  <Line type="monotone" dataKey="envelopeDown" stroke="#a78bfa" strokeWidth={1.5} dot={false} name="" strokeDasharray="5,3" legendType="none"/>
+                </LineChart>
+              </ResponsiveContainer>
+
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-4">
+                  <div className="text-cyan-400 font-semibold mb-2 text-sm">단계 1: 두 빔이 만남</div>
+                  <p className="text-xs text-slate-400">주파수가 살짝 다른 두 빛이 빔스플리터에서 중첩됨. 각각의 전기장: E₁cos(2πf₁t), E₂cos(2πf₂t)</p>
+                </div>
+                <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-4">
+                  <div className="text-pink-400 font-semibold mb-2 text-sm">단계 2: 광검출기가 강도 측정</div>
+                  <p className="text-xs text-slate-400">검출기는 |E₁+E₂|² 를 봄. 삼각함수 곱 공식으로 전개하면 빠른 진동(f₁+f₂)과 느린 진동(f₂-f₁)이 나옴.</p>
+                </div>
+                <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-4">
+                  <div className="text-amber-400 font-semibold mb-2 text-sm">단계 3: 비트만 남음</div>
+                  <p className="text-xs text-slate-400">빠른 진동(~474 THz)은 검출기 응답 한계로 자연스레 평균됨. 결국 검출되는 것은 비트 신호 cos(2π·Δf·t)만.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 수식 박스 */}
+            <div className="bg-gradient-to-br from-slate-900/80 to-cyan-950/20 border border-cyan-800/40 rounded-xl p-6">
+              <h3 className="text-xl font-bold mb-4 text-cyan-400">📐 수학적으로 보면</h3>
+              <div className="bg-slate-950/80 rounded-lg p-5 font-mono text-sm leading-relaxed overflow-x-auto">
+                <div className="text-slate-500 mb-2">두 전기장:</div>
+                <div className="text-cyan-300 mb-1">E₁(t) = E₀ cos(2π f₁ t)</div>
+                <div className="text-pink-300 mb-4">E₂(t) = E₀ cos(2π f₂ t + φ)</div>
+                
+                <div className="text-slate-500 mb-2">광검출기 출력 (강도):</div>
+                <div className="text-slate-200 mb-1">I(t) = |E₁ + E₂|²</div>
+                <div className="text-slate-200 mb-4">     = E₀² · [2 + cos(2π(f₁+f₂)t + φ) + <span className="text-amber-400">cos(2π(f₂-f₁)t + φ)</span>]</div>
+                
+                <div className="text-slate-500 mb-2">검출기는 빠른 항(f₁+f₂)을 못 따라가므로:</div>
+                <div className="text-amber-300 text-base">I(t) ≈ 2E₀² + E₀² · cos(2π · Δf · t + φ)</div>
+                <div className="text-slate-500 mt-2 text-xs">← 이 AC 항의 위상 φ가 우리가 원하는 측정값!</div>
+              </div>
+            </div>
+
+            {/* 도플러 데모 */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h3 className="text-xl font-bold mb-4 text-pink-400">🚀 거울이 움직이면? — 도플러 효과로 비트가 변함</h3>
+              <p className="text-sm text-slate-400 mb-4">측정 거울이 움직이면 도플러 시프트가 더해져 비트 주파수가 변합니다. 슬라이더로 거울 속도를 바꿔보세요.</p>
+              
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-slate-400">거울 속도 (도플러 시프트):</span>
+                  <span className="text-amber-400 font-mono">{(doppler * 0.1).toFixed(1)} Hz 추가</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="20"
+                  value={doppler}
+                  onChange={(e) => setDoppler(Number(e.target.value))}
+                  className="w-full accent-amber-400"
+                />
+                <div className="flex justify-between text-xs text-slate-500 mt-1">
+                  <span>정지</span>
+                  <span>고속 이동</span>
+                </div>
+              </div>
+
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={dopplerData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b"/>
+                  <XAxis dataKey="t" stroke="#64748b" tick={{ fontSize: 10 }}/>
+                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} domain={[0, 1]}/>
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155' }}/>
+                  <Line type="monotone" dataKey="beat" stroke="#fbbf24" strokeWidth={2} dot={false} name="비트 신호"/>
+                </LineChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-slate-500 mt-2">
+                💡 비트 주파수의 변화량 = 거울 속도 × 2/λ. 이 변화를 적분하면 위치를 얻습니다. ASML 웨이퍼 스테이지가 이렇게 sub-nm 위치를 추적합니다.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 섹션 3: 왜 강력한가 */}
+        {activeSection === 'why' && (
+          <div className="space-y-6">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h2 className="text-2xl font-bold mb-6 text-pink-400">헤테로다인이 강력한 5가지 이유</h2>
+
+              <div className="space-y-4">
+                <div className="bg-slate-950/60 border-l-4 border-amber-500 rounded p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">1️⃣</div>
+                    <div>
+                      <div className="text-amber-400 font-bold mb-1">DC 노이즈 면역</div>
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        Michelson(homodyne)은 DC 강도 자체를 측정하기 때문에, 실내 조명, 전기 노이즈, 광원의 1/f 노이즈가 모두 신호에 섞입니다. 
+                        헤테로다인은 <span className="text-amber-400">AC 비트 주파수(예: 3 MHz)</span>만 보므로, 그 주파수 대역에서만 신호를 잡으면 됩니다. 
+                        라디오 튜닝과 똑같이 "원하는 주파수만 골라 듣는" 방식입니다.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950/60 border-l-4 border-cyan-500 rounded p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">2️⃣</div>
+                    <div>
+                      <div className="text-cyan-400 font-bold mb-1">광원 강도 변동 무관</div>
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        Michelson은 광원 밝기가 5% 흔들리면 측정값도 5% 흔들립니다. 
+                        헤테로다인은 <span className="text-cyan-400">위상</span>을 측정하므로, 광원이 깜빡여도 비트 주파수의 "타이밍"은 변하지 않습니다. 
+                        진폭이 아닌 시간을 보는 방식.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950/60 border-l-4 border-pink-500 rounded p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">3️⃣</div>
+                    <div>
+                      <div className="text-pink-400 font-bold mb-1">방향성 정보 보존</div>
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        Michelson의 cos(φ)는 +φ와 −φ를 구분할 수 없습니다(거울이 앞으로 가는지 뒤로 가는지 모름). 
+                        헤테로다인은 도플러 시프트로 인해 비트 주파수가 <span className="text-pink-400">증가/감소</span>하므로 방향이 명확합니다. 
+                        앞으로 가면 Δf↑, 뒤로 가면 Δf↓.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950/60 border-l-4 border-green-500 rounded p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">4️⃣</div>
+                    <div>
+                      <div className="text-green-400 font-bold mb-1">Sub-nm 분해능</div>
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        위상은 시간차로 측정되며, 현대 전자장치는 ps 단위 시간차를 충분히 분해합니다. 
+                        λ = 633 nm 기준 위상 1°는 ~0.88 nm. 위상을 1/4096까지 분해하면 <span className="text-green-400">~0.2 nm 분해능</span> 달성 가능. 
+                        ASML 웨이퍼 스테이지 신호 오차는 보고에 따르면 0.22 nm (3σ) 수준.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950/60 border-l-4 border-violet-500 rounded p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">5️⃣</div>
+                    <div>
+                      <div className="text-violet-400 font-bold mb-1">실시간 고속 측정</div>
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        비트 신호는 연속 AC 파형이므로, 위상이 항상 정의되어 있습니다. 매 사이클마다 위치값을 업데이트할 수 있어 
+                        <span className="text-violet-400"> MHz 수준의 측정 갱신율</span>이 가능. 
+                        Michelson은 거울이 정지하면 신호도 정지해서 실시간 피드백이 어렵습니다.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 약점 */}
+            <div className="bg-gradient-to-br from-red-950/20 to-slate-900/60 border border-red-900/40 rounded-xl p-6">
+              <h3 className="text-xl font-bold mb-4 text-red-400">⚠️ 헤테로다인의 약점도 알고 있어야 함</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-slate-950/60 rounded-lg p-4">
+                  <div className="text-red-400 font-semibold mb-2 text-sm">주기적 비선형 오차 (Periodic Nonlinearity)</div>
+                  <p className="text-xs text-slate-400">편광 빔스플리터에서 빔 누설(crosstalk)이 발생하면 위상 측정에 sin 패턴의 오차가 섞입니다. 일반적으로 λ/512 ~ λ/2048 수준 (~0.3~1.2 nm).</p>
+                </div>
+                <div className="bg-slate-950/60 rounded-lg p-4">
+                  <div className="text-red-400 font-semibold mb-2 text-sm">공기 굴절률 변동</div>
+                  <p className="text-xs text-slate-400">레이저는 진공 파장이 정의되지만 공기 중에서는 굴절률(n) 만큼 파장이 짧아짐. 온도/습도/압력 변화로 n이 1ppm 변하면 1m 측정에서 1μm 오차.</p>
+                </div>
+                <div className="bg-slate-950/60 rounded-lg p-4">
+                  <div className="text-red-400 font-semibold mb-2 text-sm">Dead Path Error</div>
+                  <p className="text-xs text-slate-400">참조 빔과 측정 빔의 공통 경로가 다르면 환경 변화가 비대칭으로 영향. 정밀 설계로 최소화.</p>
+                </div>
+                <div className="bg-slate-950/60 rounded-lg p-4">
+                  <div className="text-red-400 font-semibold mb-2 text-sm">시스템 복잡도와 비용</div>
+                  <p className="text-xs text-slate-400">Zeeman 안정화 HeNe 또는 AOM 필요, 편광 광학계 정밀 정렬 필수. 단순 Michelson 대비 10배 이상 비쌈.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 섹션 4: 차세대 기술 */}
+        {activeSection === 'nextgen' && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-br from-violet-950/30 to-slate-900/60 border border-violet-800/40 rounded-xl p-6">
+              <h2 className="text-2xl font-bold mb-2 text-violet-400">🚀 헤테로다인을 넘어선 차세대 계측 기술</h2>
+              <p className="text-slate-300 mb-6 leading-relaxed">
+                헤테로다인 레이저 간섭계는 1970년대~현재까지 산업의 표준이었습니다. 
+                하지만 EUV 시대(High-NA, 1.8nm 노드)에 들어서면서 더 높은 정밀도, 환경 안정성, 다축 측정이 요구되고 있습니다. 
+                현재 진행 중인 세 가지 진화 방향을 소개합니다.
+              </p>
+            </div>
+
+            {/* 1. Grating Encoder */}
+            <div className="bg-slate-900/60 border border-amber-800/40 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="px-3 py-1 bg-amber-900/40 border border-amber-700/50 rounded text-xs text-amber-300 font-bold">GEN 3 · 현역</div>
+                <h3 className="text-xl font-bold text-amber-400">① Heterodyne Grating Encoder (격자 간섭계)</h3>
+              </div>
+              <p className="text-sm text-slate-300 mb-4 leading-relaxed">
+                <span className="text-amber-400 font-semibold">레이저 파장 대신 격자 피치(grating pitch)를 길이 기준으로 사용</span>합니다. 
+                격자 간섭계는 격자 주기의 안정성과 짧은 고정 광로 덕분에 레이저 광원의 주파수 변동, 열적 드리프트, 굴절률 변동의 영향을 덜 받습니다. 
+                ASML이 2009년 NXT 플랫폼부터 도입했으며, 현재 모든 첨단 노광기의 웨이퍼 스테이지에서 헤테로다인 레이저 간섭계를 대체했습니다.
+              </p>
+
+              <svg viewBox="0 0 700 280" className="w-full bg-slate-950 rounded-lg border border-slate-800 mb-4">
+                <defs>
+                  <pattern id="gratingPattern" x="0" y="0" width="8" height="40" patternUnits="userSpaceOnUse">
+                    <rect width="4" height="40" fill="#fbbf24" opacity="0.6"/>
+                  </pattern>
+                </defs>
+                
+                {/* 격자 */}
+                <rect x="100" y="200" width="500" height="40" fill="url(#gratingPattern)"/>
+                <rect x="100" y="200" width="500" height="40" fill="none" stroke="#fbbf24" strokeWidth="2"/>
+                <text x="350" y="265" textAnchor="middle" fill="#fbbf24" fontSize="11" fontWeight="bold">2D Diffraction Grating (피치: ~1 μm)</text>
+                <text x="350" y="278" textAnchor="middle" fill="#94a3b8" fontSize="9">웨이퍼 스테이지 표면에 장착</text>
+
+                {/* Encoder Head */}
+                <rect x="280" y="50" width="140" height="80" fill="#0f172a" stroke="#a78bfa" strokeWidth="2" rx="4"/>
+                <text x="350" y="80" textAnchor="middle" fill="#a78bfa" fontSize="12" fontWeight="bold">Encoder Head</text>
+                <text x="350" y="98" textAnchor="middle" fill="#94a3b8" fontSize="10">(고정, 광학 vessel)</text>
+                <text x="350" y="115" textAnchor="middle" fill="#94a3b8" fontSize="9">f₁, f₂ 입사 + 회절광 검출</text>
+
+                {/* 입사 및 회절 빔 */}
+                <line x1="350" y1="130" x2="320" y2="200" stroke="#22d3ee" strokeWidth="2" className="glow-cyan"/>
+                <line x1="350" y1="130" x2="380" y2="200" stroke="#f472b6" strokeWidth="2" className="glow-pink"/>
+                <line x1="320" y1="200" x2="290" y2="130" stroke="#22d3ee" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.7"/>
+                <line x1="380" y1="200" x2="410" y2="130" stroke="#f472b6" strokeWidth="1.5" strokeDasharray="3,2" opacity="0.7"/>
+
+                {/* 라벨 */}
+                <text x="240" y="170" fill="#22d3ee" fontSize="10">+1차 회절</text>
+                <text x="430" y="170" fill="#f472b6" fontSize="10">-1차 회절</text>
+
+                {/* 이동 방향 */}
+                <line x1="500" y1="220" x2="580" y2="220" stroke="#22d3ee" strokeWidth="2"/>
+                <polygon points="580,220 575,217 575,223" fill="#22d3ee"/>
+                <text x="540" y="215" textAnchor="middle" fill="#22d3ee" fontSize="10">스테이지 이동</text>
+
+                {/* 짧은 빔 강조 */}
+                <rect x="290" y="135" width="120" height="60" fill="none" stroke="#fbbf24" strokeWidth="1" strokeDasharray="3,3" opacity="0.5"/>
+                <text x="600" y="165" textAnchor="end" fill="#fbbf24" fontSize="10">짧은 광로 (~15mm)</text>
+                <text x="600" y="178" textAnchor="end" fill="#94a3b8" fontSize="9">→ 굴절률 변동 영향 최소</text>
+              </svg>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-slate-950/60 border border-green-900/30 rounded-lg p-4">
+                  <div className="text-green-400 font-semibold mb-2 text-sm">✓ 헤테로다인 레이저 대비 장점</div>
+                  <ul className="text-xs text-slate-300 space-y-1">
+                    <li>• 공기 굴절률 변동(온도/습도/압력)에 둔감</li>
+                    <li>• 짧은 광로(~15mm)로 환경 노이즈 최소화</li>
+                    <li>• Abbe 오차에 덜 민감</li>
+                    <li>• 격자 기반 → 더 컴팩트, 저렴</li>
+                    <li>• 6-DOF 동시 측정 용이</li>
+                  </ul>
+                </div>
+                <div className="bg-slate-950/60 border border-amber-900/30 rounded-lg p-4">
+                  <div className="text-amber-400 font-semibold mb-2 text-sm">현재 성능 (ASML NXT/NXE)</div>
+                  <ul className="text-xs text-slate-300 space-y-1">
+                    <li>• 신호 오차: 0.22 nm (3σ)</li>
+                    <li>• Long stroke: 수백 mm (in-plane)</li>
+                    <li>• Short stroke: 수백 μm (out-of-plane)</li>
+                    <li>• 측정 헤드: 스테이지 4코너에 배치</li>
+                    <li>• 주요 공급: Zygo, Heidenhain</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Optical Frequency Comb */}
+            <div className="bg-slate-900/60 border border-violet-800/40 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="px-3 py-1 bg-violet-900/40 border border-violet-700/50 rounded text-xs text-violet-300 font-bold">GEN 4 · 미래</div>
+                <h3 className="text-xl font-bold text-violet-400">② Optical Frequency Comb (광 주파수 빗) Interferometry</h3>
+              </div>
+              <p className="text-sm text-slate-300 mb-4 leading-relaxed">
+                2005년 노벨물리학상(John Hall, Theodor Hänsch)의 성과로, 펨토초 펄스 레이저가 만드는 
+                <span className="text-violet-400 font-semibold"> 수십만 개의 정확히 등간격인 주파수 라인</span>을 길이 측정에 활용합니다. 
+                각 라인이 원자시계급 정확도를 가져, "주파수의 자(ruler)" 역할을 합니다. 
+                2025년 KRISS(한국표준과학연구원)가 양자역학적 정밀도 한계에 근접한 절대거리 측정 시스템을 개발해 차세대 길이 표준 후보로 평가받고 있습니다.
+              </p>
+
+              <svg viewBox="0 0 700 220" className="w-full bg-slate-950 rounded-lg border border-slate-800 mb-4">
+                {/* 주파수 빗 시각화 */}
+                <text x="20" y="30" fill="#a78bfa" fontSize="12" fontWeight="bold">주파수 영역에서 본 OFC: 수십만 개의 등간격 라인</text>
+                
+                {/* 빗 라인들 */}
+                {Array.from({length: 50}, (_, i) => {
+                  const x = 30 + i * 13;
+                  const h = 80 + 30 * Math.exp(-Math.pow((i - 25) / 12, 2));
+                  return (
+                    <line key={i} x1={x} y1="150" x2={x} y2={150 - h} stroke="#a78bfa" strokeWidth="1.5" opacity="0.8" className="glow-violet"/>
+                  );
+                })}
+
+                {/* 가로축 */}
+                <line x1="20" y1="150" x2="680" y2="150" stroke="#475569" strokeWidth="1"/>
+                <text x="350" y="180" textAnchor="middle" fill="#94a3b8" fontSize="10">광주파수 (THz) →</text>
+
+                {/* 화살표로 간격 표시 */}
+                <line x1="180" y1="190" x2="270" y2="190" stroke="#fbbf24" strokeWidth="1"/>
+                <line x1="180" y1="187" x2="180" y2="193" stroke="#fbbf24" strokeWidth="1"/>
+                <line x1="270" y1="187" x2="270" y2="193" stroke="#fbbf24" strokeWidth="1"/>
+                <text x="225" y="205" textAnchor="middle" fill="#fbbf24" fontSize="9">f_rep (간격: ~100 MHz~10 GHz)</text>
+
+                {/* 설명 */}
+                <text x="350" y="60" textAnchor="middle" fill="#94a3b8" fontSize="10" fontStyle="italic">각 라인이 원자시계급 정확도 → "주파수의 자"</text>
+              </svg>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-slate-950/60 border border-violet-900/30 rounded-lg p-4">
+                  <div className="text-violet-400 font-semibold mb-2 text-sm">측정 방식</div>
+                  <p className="text-xs text-slate-400">Multi-heterodyne(빗 vs 빗), 분광 간섭, 합성파장(synthetic wavelength) 등 다양한 방법 사용</p>
+                </div>
+                <div className="bg-slate-950/60 border border-violet-900/30 rounded-lg p-4">
+                  <div className="text-violet-400 font-semibold mb-2 text-sm">핵심 장점</div>
+                  <p className="text-xs text-slate-400">절대거리 측정 가능 (사이클 카운팅 불필요), 매우 긴 측정 범위(~50m), Rb 원자시계 추적성</p>
+                </div>
+                <div className="bg-slate-950/60 border border-violet-900/30 rounded-lg p-4">
+                  <div className="text-violet-400 font-semibold mb-2 text-sm">현재 상태</div>
+                  <p className="text-xs text-slate-400">2025년 KRISS 양자 정밀도 한계 근접 시스템 시연, 국가 표준 후보, 산업 응용 진행 중</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Symmetric & Advanced Heterodyne */}
+            <div className="bg-slate-900/60 border border-cyan-800/40 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="px-3 py-1 bg-cyan-900/40 border border-cyan-700/50 rounded text-xs text-cyan-300 font-bold">GEN 3.5 · 연구 진행</div>
+                <h3 className="text-xl font-bold text-cyan-400">③ 진화된 헤테로다인 변종들</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="bg-slate-950/60 border-l-2 border-cyan-500 rounded p-4">
+                  <div className="text-cyan-400 font-semibold mb-1 text-sm">Symmetric Heterodyne (대칭 헤테로다인)</div>
+                  <p className="text-xs text-slate-400">대칭 헤테로다인 설계로 신호 대비도와 S/N비를 향상시켜 이론적으로 12 pm 분해능을 달성. 두 빔 경로를 완벽 대칭화하여 공통 모드 노이즈 제거.</p>
+                </div>
+                <div className="bg-slate-950/60 border-l-2 border-cyan-500 rounded p-4">
+                  <div className="text-cyan-400 font-semibold mb-1 text-sm">Zero Dead-Zone Heterodyne Grating Interferometer</div>
+                  <p className="text-xs text-slate-400">차세대 노광 시스템과 원자급 정밀 제조를 위해 듀얼 주파수 광원과 zero dead-zone 광로 구성으로 광원 변동 및 굴절률 변화 영향을 최소화하면서 3-DOF 동시 측정 가능.</p>
+                </div>
+                <div className="bg-slate-950/60 border-l-2 border-cyan-500 rounded p-4">
+                  <div className="text-cyan-400 font-semibold mb-1 text-sm">Fiber-Coupled Heterodyne (광섬유 결합)</div>
+                  <p className="text-xs text-slate-400">2자유도 광섬유 결합 헤테로다인 격자 간섭계로 30초간 in-plane 0.246 nm, out-of-plane 0.465 nm (3σ) 안정성 달성. 광섬유로 광원과 측정부 분리하여 열적 안정성 개선.</p>
+                </div>
+                <div className="bg-slate-950/60 border-l-2 border-cyan-500 rounded p-4">
+                  <div className="text-cyan-400 font-semibold mb-1 text-sm">Rubidium-Stabilized Heterodyne</div>
+                  <p className="text-xs text-slate-400">레이저 광원을 루비듐 원자 전이선에 안정화하여 광로차에 의한 헤테로다인 위상 오차를 줄이고, 주기적 비선형 오차를 0.3 nm 이하로 감소.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 종합 비교 차트 */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <h3 className="text-xl font-bold mb-4 text-pink-400">📊 세대별 분해능 비교</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={techComparison} layout="vertical" margin={{ left: 100 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b"/>
+                  <XAxis type="number" stroke="#64748b" tick={{ fontSize: 10 }} scale="log" domain={[0.005, 200]} label={{ value: '분해능 (nm, 로그 스케일, 낮을수록 좋음)', position: 'insideBottom', offset: -5, fill: '#94a3b8' }}/>
+                  <YAxis type="category" dataKey="name" stroke="#64748b" tick={{ fontSize: 11 }} width={140}/>
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155' }}
+                    formatter={(value) => [`${value} nm`, '분해능']}
+                  />
+                  <Bar dataKey="resolution">
+                    {techComparison.map((entry, idx) => (
+                      <Cell key={idx} fill={['#64748b', '#22d3ee', '#fbbf24', '#a78bfa'][idx]}/>
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-4">
+                {techComparison.map((tech, idx) => (
+                  <div key={idx} className="bg-slate-950/60 rounded-lg p-3 text-center">
+                    <div className="text-xs text-slate-500 mb-1">{tech.era}</div>
+                    <div className="font-bold text-sm" style={{ color: ['#94a3b8', '#22d3ee', '#fbbf24', '#a78bfa'][idx] }}>
+                      {tech.resolution} nm
+                    </div>
+                    <div className="text-xs text-slate-400 mt-1 whitespace-pre-line">{tech.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 영민님 관점 */}
+            <div className="bg-gradient-to-br from-amber-950/30 to-slate-900/60 border border-amber-800/40 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="text-3xl">🏭</div>
+                <h3 className="text-xl font-bold text-amber-400">영민님 관점: 포토 공정 엔지니어가 알아둘 점</h3>
+              </div>
+              <div className="space-y-3 text-sm text-slate-300 leading-relaxed">
+                <p>
+                  <span className="text-amber-400 font-semibold">1. 현장에서 보는 변화:</span>{' '}
+                  ASML 노광기에서 헤테로다인 레이저 간섭계(Agilent/Zygo 5500 등) → 격자 인코더(Zygo/Heidenhain ATHENA, IPRO)로의 전환이 NXT:1950i부터 본격화되었고, 
+                  EUV NXE 시리즈는 격자 인코더가 표준입니다. 트러블슈팅 시 "interferometer error"와 "encoder error"의 원인이 완전히 다릅니다.
+                </p>
+                <p>
+                  <span className="text-amber-400 font-semibold">2. 격자 인코더의 약점:</span>{' '}
+                  격자 자체의 오염, 스크래치, 열변형이 새로운 실패 모드입니다. 격자가 웨이퍼 스테이지에 직접 부착되므로 
+                  CDA(Clean Dry Air) 환경 관리와 격자 표면 보호가 critical합니다.
+                </p>
+                <p>
+                  <span className="text-amber-400 font-semibold">3. 투자 관점:</span>{' '}
+                  격자 인코더 시장은 Heidenhain(독일, 비상장), Renishaw(영국), Magnescale(소니 그룹), Zygo(미국, Ametek 자회사) 과점. 
+                  Optical frequency comb은 아직 산업 응용 전이지만 Menlo Systems, Toptica가 선두. 
+                  KRISS 같은 한국 국가연구소의 OFC 기술은 향후 K-반도체 공급망의 차별화 요소가 될 가능성 있음.
+                </p>
+                <p>
+                  <span className="text-amber-400 font-semibold">4. 다음 큰 이벤트:</span>{' '}
+                  High-NA EUV(0.55 NA) 시대에는 더 작은 스테이지, 더 빠른 가속, 더 높은 정밀도가 요구됩니다. 
+                  Zero dead-zone heterodyne grating + 부분적 OFC 보조 캘리브레이션이 차세대 표준이 될 가능성 큼.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 푸터 */}
+        <footer className="mt-8 pt-6 border-t border-slate-800 text-center">
+          <p className="text-xs text-slate-500">
+            Heterodyne Deep Dive · 차세대 광학 계측 기술 비교 · 
+            <span className="text-slate-400 ml-1">함영민님을 위해 제작 (ASML 포토 공정 컨텍스트)</span>
+          </p>
+        </footer>
+      </div>
+    </div>
+  );
+}

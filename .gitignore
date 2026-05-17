@@ -1,0 +1,17 @@
+.vercel/
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Local visual QA artifacts
+*.png
+*.webp
+*.jpg
+*.jpeg
+
+# Temporary conversion backups
+*.bak
+*_localfix_*.html
+_tmpl2.html
+_tmpl3.html

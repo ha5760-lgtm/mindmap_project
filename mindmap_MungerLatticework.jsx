@@ -1,0 +1,595 @@
+import React, { useState, useMemo } from 'react';
+import { Brain, Layers, RefreshCw, BookOpen, Target, ChevronRight, Calendar, Zap, Award, AlertTriangle, TrendingUp, FlaskConical, Atom, Dna, Calculator, Cpu, DollarSign, Users, ArrowRight, CheckCircle2, Circle } from 'lucide-react';
+
+const MungerLatticework = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedDiscipline, setSelectedDiscipline] = useState('all');
+  const [checkedWeeks, setCheckedWeeks] = useState({});
+
+  // 학문별 핵심 모델 (영민님 도메인 매핑 포함)
+  const disciplines = [
+    {
+      id: 'physics',
+      name: '물리학',
+      icon: Atom,
+      color: 'cyan',
+      hex: '#22d3ee',
+      models: [
+        { name: '임계질량 (Critical Mass)', desc: '특정 임계점을 넘으면 자기지속 반응이 시작됨', semi: 'EUV 광원 출력이 임계치를 넘어야 양산 가능', invest: '해자가 임계 규모를 넘으면 경쟁사 진입이 사실상 불가', edu: '학원생 수 임계점(~80명) 넘으면 입소문 자가증식' },
+        { name: '관성 (Inertia)', desc: '움직이던 것은 계속 움직이고, 멈춘 것은 멈춰 있다', semi: '레거시 공정 라인은 ROI가 끝나도 관성으로 유지됨', invest: 'TSMC·ASML의 고객 락인은 거대한 관성', edu: '기존 학부모의 재등록 관성이 신규 모객보다 강력' },
+        { name: '되먹임 루프 (Feedback Loop)', desc: '결과가 다시 원인을 강화하거나 약화시킴', semi: 'PMBIST의 수율 데이터 → 공정 보정 → 수율 개선', invest: '주가 상승 → 옵션 행사 → 인재 유입 → 실적 개선', edu: '학습 성과 → 후기 → 신규 등록 → 강사 투자 여력' },
+        { name: '평형 (Equilibrium)', desc: '시스템은 균형점을 찾아 수렴하려는 경향', semi: '챔버 압력·온도의 동적 평형 제어', invest: '시장 가격은 정보 평형 상태', edu: '수업료-수요-퀄리티의 시장 평형' },
+        { name: '상전이 (Phase Transition)', desc: '연속 변화 누적이 불연속 질적 도약 유발', semi: 'EUV→High-NA 전환, planar→FinFET→GAA', invest: 'AI 추론 수요가 임계점에서 GPU→ASIC으로 상전이', edu: '오프라인→하이브리드 모델 상전이' }
+      ]
+    },
+    {
+      id: 'biology',
+      name: '생물학',
+      icon: Dna,
+      color: 'emerald',
+      hex: '#10b981',
+      models: [
+        { name: '자연선택 (Natural Selection)', desc: '환경 적합도가 높은 변이가 살아남고 번식', semi: '수율 높은 공정 레시피만 양산으로 채택됨', invest: '지속 가능한 ROE 가진 기업만 장기 생존', edu: '학부모 반응 좋은 교재·교사만 살아남음' },
+        { name: '생태적 지위 (Ecological Niche)', desc: '경쟁 회피를 위해 고유 영역을 차지', semi: 'ASML(EUV) vs Nikon(레거시) — 지위 분화', invest: 'TSMC(파운드리) vs 삼성(IDM) — 지위 분리', edu: '대형 프랜차이즈와 차별화된 평촌 영어 지위' },
+        { name: '공진화 (Co-evolution)', desc: '두 종이 서로의 진화를 추동', semi: 'ASML-TSMC: 노드 미세화 공진화 30년', invest: 'NVIDIA-TSMC, Apple-TSMC 공진화 관계', edu: '강사-학생 공진화, 학부모-원장 공진화' },
+        { name: '적자생존 vs 협동', desc: '경쟁뿐 아니라 협력도 진화의 동력', semi: 'SEMI 컨소시엄, IMEC 공동연구', invest: '벅셔의 자회사 자율경영 = 협동 시스템', edu: '학원 간 정보 교류 네트워크 활용' }
+      ]
+    },
+    {
+      id: 'psychology',
+      name: '심리학',
+      icon: Brain,
+      color: 'rose',
+      hex: '#f43f5e',
+      models: [
+        { name: '확증편향 (Confirmation Bias)', desc: '믿는 것을 지지하는 증거만 선택적으로 수용', semi: '"이 장비는 문제없다"는 가설에 맞는 데이터만 봄', invest: '보유 종목의 호재만 보고 악재 무시 — 영민님 ASML/TSMC 집중투자의 가장 큰 적', edu: '"우리 학원 좋다"는 학부모 의견만 기억' },
+        { name: '앵커링 (Anchoring)', desc: '처음 본 숫자가 이후 판단의 기준이 됨', semi: '초기 수율 목표가 비합리적 기준으로 고착', invest: '매수 단가에 앵커링되어 매도 결정 왜곡', edu: '경쟁 학원 수업료에 앵커링' },
+        { name: '인센티브 편향 (Incentive Bias)', desc: '"인센티브를 보여달라, 결과를 예측해주겠다" — 멍거', semi: '장비사 KPI가 가동률이면 예방정비 후순위', invest: '펀드매니저 인센티브 = 단기 성과 → 단기 매매', edu: '강사 인센티브 설계가 수업 품질 결정' },
+        { name: '사회적 증거 (Social Proof)', desc: '타인의 행동을 정답으로 간주', semi: '경쟁사가 도입한 장비를 무비판 도입', invest: '대중이 사면 따라 사는 군집행동 — 가치투자의 정반대', edu: '학원 후기·재등록률을 적극 노출' },
+        { name: '권위 편향 (Authority Bias)', desc: '권위자 의견을 비판 없이 수용', semi: '베테랑 엔지니어 직관에 과의존', invest: '유명 애널리스트 목표가 맹신', edu: '유명 강사 마케팅의 한계 인식' },
+        { name: '롤라팔루자 효과 (Lollapalooza)', desc: '여러 편향이 동시에 같은 방향으로 작용하면 극단적 결과 — 멍거의 핵심 개념', semi: '확증편향+권위편향+인센티브편향 동시 작용 = 대형 사고', invest: '버블의 정체: 사회적증거+확증편향+인센티브+권위', edu: '몰입식 마케팅이 강력한 이유' }
+      ]
+    },
+    {
+      id: 'economics',
+      name: '경제학',
+      icon: DollarSign,
+      color: 'amber',
+      hex: '#f59e0b',
+      models: [
+        { name: '기회비용 (Opportunity Cost)', desc: '선택의 진짜 비용 = 포기한 차선책의 가치', semi: '신규 장비 투자의 진짜 비용 = 그 자본의 다른 용도', invest: '버핏의 핵심 멘탈모델 — 모든 보유는 매수 결정의 반복', edu: '학원 확장 vs 챗봇 SaaS 전환의 기회비용' },
+        { name: '비교우위 (Comparative Advantage)', desc: '절대 우위가 아닌 상대 우위로 분업', semi: 'TSMC: 파운드리에 비교우위 집중', invest: '삼성전자: 메모리 비교우위 vs 파운드리 절대열위', edu: '영민님: 반도체+투자 융합 비교우위' },
+        { name: '규모의 경제 (Economies of Scale)', desc: '생산량 증가 시 단위당 비용 감소', semi: 'TSMC의 압도적 CapEx 흡수 능력', invest: '코스트코, 월마트의 본질적 해자', edu: '학원 콘텐츠 자동화 시 한계비용 ≈ 0' },
+        { name: '복리 (Compounding)', desc: '"세상의 8번째 불가사의" — 아인슈타인', semi: '수율 0.5% 매년 개선의 10년 누적 효과', invest: '영민님 투자 철학의 근본 — 시간이 가장 큰 무기', edu: '학생 학습 복리 vs 학원 평판 복리' },
+        { name: '해자 (Economic Moat)', desc: '지속 가능한 경쟁우위의 원천', semi: 'ASML EUV 독점, TSMC 공정 리더십', invest: '버핏 투자의 1순위 기준', edu: '평촌 입지 + 윤선생 브랜드 + 데이터 = 학원 해자' }
+      ]
+    },
+    {
+      id: 'math',
+      name: '수학·통계',
+      icon: Calculator,
+      color: 'violet',
+      hex: '#8b5cf6',
+      models: [
+        { name: '베이즈 추론 (Bayesian Updating)', desc: '새 증거에 따라 사전확률을 갱신', semi: '장비 이상 신호가 누적될수록 고장 확률 갱신', invest: '실적 발표마다 투자 가설의 사후확률 재계산', edu: '학부모 피드백으로 마케팅 가설 갱신' },
+        { name: '기댓값 (Expected Value)', desc: '확률 × 결과의 합 — 모든 의사결정의 뼈대', semi: '예방정비 비용 vs (고장확률 × 손실)의 기댓값 비교', invest: '비대칭 수익 (Asymmetric Bet) — 손실 한정, 이익 무한', edu: '신규 광고 채널의 LTV 기댓값 계산' },
+        { name: '정규분포의 함정', desc: '실제 세계는 두꺼운 꼬리 (Fat Tail)', semi: '6시그마 가정으로 못 잡는 극단적 결함', invest: '블랙스완 — 정규분포 가정의 최대 약점', edu: '바이럴 한 번이 평소 마케팅 전체보다 큰 효과' },
+        { name: '대수의 법칙', desc: '표본이 클수록 평균에 수렴', semi: 'N=3 실험으로 결론 내리면 안 됨', invest: '단기 수익률은 신호가 아닌 노이즈', edu: '한 달 등록률로 광고 효과 판단 금물' },
+        { name: '순열·조합', desc: '경우의 수의 폭발적 증가 인식', semi: '공정 변수 10개의 조합 = 거대한 탐색공간', invest: '포트폴리오 조합의 상관관계', edu: '시간표×강사×교재 조합의 복잡성' }
+      ]
+    },
+    {
+      id: 'engineering',
+      name: '공학·시스템',
+      icon: Cpu,
+      color: 'sky',
+      hex: '#0ea5e9',
+      models: [
+        { name: '병목 이론 (Bottleneck)', desc: '시스템 전체 처리량은 가장 느린 단계가 결정', semi: '영민님의 본업 — Photo 공정의 병목 분석', invest: 'TSMC의 CoWoS 병목이 NVIDIA 매출 천장 결정', edu: '학원 성장 병목 = 강사 채용? 공간? 마케팅?' },
+        { name: '백업·이중화 (Redundancy)', desc: '핵심 시스템은 반드시 백업 보유', semi: '챔버 이중화, 데이터 백업 정책', invest: '안전마진 = 투자의 백업 시스템', edu: '강사 백업, 데이터 백업(Supabase 마이그레이션 완료)' },
+        { name: '손익분기 (Break-even)', desc: '고정비를 회수하는 임계점', semi: '신공정 도입의 BEP 노드 수', invest: '기업의 영업레버리지 이해', edu: '학원 BEP 학생 수 = 정확한 경영 지표' },
+        { name: '되먹임 제어 (Control Loop)', desc: 'PID 제어처럼 오차를 측정해 보정', semi: 'APC (Advanced Process Control)의 본질', invest: '월 단위 포트폴리오 리뷰 = 제어 루프', edu: '주간 매출 KPI → 조정 → 측정 반복' },
+        { name: '시스템 사고', desc: '부분 최적이 전체 최적과 다를 수 있음', semi: '한 장비 가동률 극대화가 라인 전체엔 손해', invest: '한 종목 수익률 vs 포트폴리오 변동성', edu: '한 강사 매출 극대화가 학원 평판엔 손해 가능' }
+      ]
+    }
+  ];
+
+  // 12주 훈련 플랜
+  const trainingPlan = [
+    { week: 1, phase: '수집', title: '인지편향 24개 마스터', tasks: ['멍거 Psychology of Human Misjudgment 강연 정독 (2회)', '24개 편향을 한 줄로 압축한 카드 작성', '본인 투자 일지에서 편향 사례 5개 발굴'], deliverable: '편향 카드 24장 + 자기 사례 5건' },
+    { week: 2, phase: '수집', title: '물리·공학 모델 정리', tasks: ['반도체 업무에서 쓰는 모델 10개 명문화', '임계질량·관성·되먹임·평형·상전이 사례 각 3개', '본업 모델을 투자에 적용해보기'], deliverable: '물리/공학 모델 카탈로그 v1' },
+    { week: 3, phase: '수집', title: '생물학·진화 모델', tasks: ['Selfish Gene (Dawkins) 1~5장 정독', '생태적 지위 관점으로 반도체 3사 분석', '공진화 사례 5개 발굴 (ASML-TSMC 등)'], deliverable: '생물학 모델 카탈로그 + 산업 적용 5건' },
+    { week: 4, phase: '수집', title: '경제·수학 모델 통합', tasks: ['Bevelin "Seeking Wisdom" 정독 시작', '기회비용·복리·기댓값·베이즈 사례 정리', '본인 포트폴리오에 기대값 계산 적용'], deliverable: '경제/수학 모델 카탈로그 + 포트폴리오 기댓값표' },
+    { week: 5, phase: '압축', title: 'Invert! 거꾸로 뒤집기', tasks: ['ASML 투자 → "10년 뒤 실패 시나리오 10개"', '학원 운영 → "학부모가 절대 등록 안 하는 이유 10개"', '챗봇 → "최악의 응답 패턴 10개"'], deliverable: 'Inversion 노트 30개 시나리오' },
+    { week: 6, phase: '압축', title: '의사결정 일지 시작', tasks: ['지난 6개월 주요 결정 5개 사후 분석', '결정 시점 적용 모델 + 반대 시나리오 + 자신감 기록', '결과 vs 예측 갭 분석'], deliverable: '의사결정 일지 템플릿 + 과거 사례 5건' },
+    { week: 7, phase: '강제 적용', title: '교차 학문 분석 (반도체)', tasks: ['HBM 경쟁을 3개 학문으로 설명 (생물/물리/심리)', 'TSMC CoWoS 병목을 시스템·경제·물리 관점으로', 'EUV 전환을 상전이·자연선택·복리로 분석'], deliverable: '반도체 멀티렌즈 분석 리포트 3건' },
+    { week: 8, phase: '강제 적용', title: '교차 학문 분석 (투자)', tasks: ['보유 종목 1개를 5개 학문 렌즈로 재분석', '인지편향 24개로 본인 매매 이력 점검', '롤라팔루자 효과 사례 3개 작성'], deliverable: '집중 투자 종목 5학문 분석서' },
+    { week: 9, phase: '강제 적용', title: '교차 학문 분석 (학원)', tasks: ['학원 성장 병목을 시스템·심리·생물 관점으로', '학부모 의사결정을 인지편향으로 매핑', '챗봇 UX에 사회적 증거·인센티브 설계'], deliverable: '학원 전략 격자틀 리포트' },
+    { week: 10, phase: '피드백', title: '의사결정 복기', tasks: ['지난 6주간 의사결정 일지 전수 검토', '적중 모델 vs 빗나간 모델 분류', '편향이 작동했던 순간 식별'], deliverable: '복기 노트 + 개인 편향 지도' },
+    { week: 11, phase: '피드백', title: '카탈로그 v2 + 가중치', tasks: ['실전 검증된 모델만 남기고 가지치기', '도메인별 자주 쓰는 Top 20 모델 선정', '체크리스트 형태로 압축'], deliverable: '개인 격자틀 핸드북 v2' },
+    { week: 12, phase: '체화', title: '체크리스트 운용 + 다음 사이클', tasks: ['모든 주요 결정에 체크리스트 강제 적용', 'Silicon Value 프로젝트에 격자틀 통합', '다음 12주 학습 주제 선정 (역사·전쟁사 권장)'], deliverable: '운용 가능한 격자틀 시스템 + 차기 로드맵' }
+  ];
+
+  const phases = [
+    { id: '수집', label: '수집', desc: '모델 카탈로그 구축', color: '#22d3ee', weeks: [1,2,3,4] },
+    { id: '압축', label: '압축', desc: 'Invert + 일지화', color: '#f59e0b', weeks: [5,6] },
+    { id: '강제 적용', label: '강제 적용', desc: '교차 학문 훈련', color: '#10b981', weeks: [7,8,9] },
+    { id: '피드백', label: '피드백', desc: '복기 + 개선', color: '#f43f5e', weeks: [10,11] },
+    { id: '체화', label: '체화', desc: '체크리스트 운용', color: '#8b5cf6', weeks: [12] }
+  ];
+
+  const books = [
+    { title: 'Poor Charlie\'s Almanack', author: '찰리 멍거', priority: 1, why: '격자틀 사고의 원전 — 반복 정독 필수' },
+    { title: 'Seeking Wisdom', author: 'Peter Bevelin', priority: 1, why: '학문별 모델을 격자틀로 정리한 유일한 책' },
+    { title: 'Psychology of Human Misjudgment', author: '찰리 멍거 강연', priority: 1, why: '24개 인지편향의 출발점, 무료 PDF' },
+    { title: 'Influence', author: 'Robert Cialdini', priority: 2, why: '심리학 모델의 실전 적용서' },
+    { title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', priority: 2, why: '시스템1/2 — 편향의 작동 메커니즘' },
+    { title: 'The Selfish Gene', author: 'Richard Dawkins', priority: 2, why: '생물학·진화 모델의 기초' },
+    { title: 'Antifragile', author: 'Nassim Taleb', priority: 3, why: '비대칭성·블랙스완·기댓값의 본질' },
+    { title: '대체 불가능한 인간', author: '필립 피셔', priority: 3, why: '영민님 본업 + 투자 융합의 사례' }
+  ];
+
+  const toggleWeek = (week) => {
+    setCheckedWeeks(prev => ({...prev, [week]: !prev[week]}));
+  };
+
+  const completedCount = Object.values(checkedWeeks).filter(Boolean).length;
+  const progress = (completedCount / 12) * 100;
+
+  const filteredDisciplines = selectedDiscipline === 'all' 
+    ? disciplines 
+    : disciplines.filter(d => d.id === selectedDiscipline);
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6" style={{fontFamily: "'Pretendard', 'Noto Sans KR', -apple-system, sans-serif"}}>
+      <div className="max-w-7xl mx-auto">
+        
+        {/* 헤더 */}
+        <div className="mb-10 border-b border-zinc-800 pb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-500/20 to-rose-500/20 flex items-center justify-center border border-amber-500/30">
+              <Layers className="w-6 h-6 text-amber-400" />
+            </div>
+            <div>
+              <div className="text-xs text-amber-400/80 tracking-widest mb-1">CHARLIE MUNGER · LATTICEWORK OF MENTAL MODELS</div>
+              <h1 className="text-3xl font-bold tracking-tight">격자틀 사고 체화 훈련</h1>
+            </div>
+          </div>
+          <p className="text-zinc-400 leading-relaxed max-w-3xl">
+            영민님의 <span className="text-cyan-400">반도체 공정 엔지니어링</span>, <span className="text-amber-400">가치투자(ASML/TSMC/삼성)</span>, <span className="text-emerald-400">학원 운영</span> 세 도메인에 맞춰 설계된 12주 체화 플랜.
+            <span className="block mt-2 text-zinc-500 italic">"여러 학문의 핵심 모델을 머릿속에 격자로 걸어두고, 모든 문제를 그 위에서 본다." — Charlie Munger</span>
+          </p>
+        </div>
+
+        {/* 진행률 */}
+        <div className="mb-8 p-5 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm text-zinc-400">전체 진행률</span>
+            </div>
+            <span className="text-sm font-mono text-emerald-400">{completedCount}/12 weeks · {progress.toFixed(0)}%</span>
+          </div>
+          <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500"
+              style={{width: `${progress}%`}}
+            />
+          </div>
+        </div>
+
+        {/* 탭 네비게이션 */}
+        <div className="flex gap-1 mb-6 border-b border-zinc-800">
+          {[
+            {id: 'overview', label: '개요', icon: Target},
+            {id: 'models', label: '모델 카탈로그', icon: Brain},
+            {id: 'plan', label: '12주 훈련 플랜', icon: Calendar},
+            {id: 'tools', label: '핵심 도구', icon: Zap},
+            {id: 'books', label: '추천 도서', icon: BookOpen}
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? 'text-amber-400 border-b-2 border-amber-400'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 개요 탭 */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-6 bg-gradient-to-br from-amber-500/5 to-amber-500/10 border border-amber-500/20 rounded-xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <Award className="w-5 h-5 text-amber-400" />
+                  <h3 className="font-semibold text-amber-300">왜 격자틀인가</h3>
+                </div>
+                <p className="text-sm text-zinc-300 leading-relaxed">
+                  단일 학문 모델로는 복잡계가 풀리지 않습니다. 멍거는 "<span className="italic">손에 망치만 있으면 세상이 다 못으로 보인다</span>"고 했죠. 
+                  반도체·투자·교육 세 도메인을 동시에 운영하는 영민님에게 격자틀은 선택이 아니라 필수입니다.
+                </p>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-rose-500/5 to-rose-500/10 border border-rose-500/20 rounded-xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className="w-5 h-5 text-rose-400" />
+                  <h3 className="font-semibold text-rose-300">흔한 실패</h3>
+                </div>
+                <p className="text-sm text-zinc-300 leading-relaxed">
+                  책만 읽으면 체화되지 않습니다. <span className="text-rose-300 font-medium">강제 적용 + 의사결정 일지 + 복기</span> 사이클 없이는 단순 지식 수집에 그쳐요. 
+                  이 플랜의 핵심은 매주 본인 문제에 강제로 적용시키는 것입니다.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-cyan-400" />
+                4단계 체화 사이클
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                {[
+                  {step: '①', title: '수집', desc: '학문별 핵심 모델 80~90개를 한 줄로 압축', color: 'cyan'},
+                  {step: '②', title: '압축', desc: 'Invert! — 모든 문제를 반대로 뒤집어 보기', color: 'amber'},
+                  {step: '③', title: '강제 적용', desc: '한 문제를 3개 이상 학문 렌즈로 분석', color: 'emerald'},
+                  {step: '④', title: '피드백', desc: '의사결정 일지 → 6개월·1년 복기', color: 'rose'}
+                ].map((s, i) => (
+                  <div key={i} className="p-4 bg-zinc-950 border border-zinc-800 rounded-lg">
+                    <div className={`text-2xl font-bold mb-1`} style={{color: s.color === 'cyan' ? '#22d3ee' : s.color === 'amber' ? '#f59e0b' : s.color === 'emerald' ? '#10b981' : '#f43f5e'}}>{s.step}</div>
+                    <div className="font-semibold mb-2">{s.title}</div>
+                    <div className="text-xs text-zinc-400 leading-relaxed">{s.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Target className="w-5 h-5 text-amber-400" />
+                영민님의 출발점 (이미 보유 중인 격자)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-lg">
+                  <div className="text-xs text-cyan-400 mb-2 tracking-widest">반도체 9년차</div>
+                  <ul className="text-sm space-y-1 text-zinc-300">
+                    <li>• 병목·수율·되먹임 루프</li>
+                    <li>• APC 제어 시스템 사고</li>
+                    <li>• PMBIST 통계적 사고</li>
+                  </ul>
+                </div>
+                <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                  <div className="text-xs text-amber-400 mb-2 tracking-widest">가치투자자</div>
+                  <ul className="text-sm space-y-1 text-zinc-300">
+                    <li>• 해자·기회비용·복리</li>
+                    <li>• Owner Earnings 분석</li>
+                    <li>• 집중 포트폴리오 철학</li>
+                  </ul>
+                </div>
+                <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                  <div className="text-xs text-emerald-400 mb-2 tracking-widest">학원 경영</div>
+                  <ul className="text-sm space-y-1 text-zinc-300">
+                    <li>• 입소문 되먹임 루프</li>
+                    <li>• LTV·CAC 단위경제</li>
+                    <li>• 챗봇 자동화 시스템</li>
+                  </ul>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-400 mt-4 leading-relaxed">
+                <span className="text-amber-300 font-medium">이미 격자의 1/3은 깔려 있습니다.</span> 12주 플랜은 명시적 언어화 + 다른 도메인 교차 적용으로 격자를 두껍게 만드는 과정입니다.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 모델 카탈로그 탭 */}
+        {activeTab === 'models' && (
+          <div>
+            <div className="flex flex-wrap gap-2 mb-6">
+              <button
+                onClick={() => setSelectedDiscipline('all')}
+                className={`px-4 py-2 text-sm rounded-lg border transition-all ${
+                  selectedDiscipline === 'all'
+                    ? 'bg-zinc-800 border-zinc-600 text-white'
+                    : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                전체
+              </button>
+              {disciplines.map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => setSelectedDiscipline(d.id)}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-all ${
+                    selectedDiscipline === d.id
+                      ? 'border-zinc-600 text-white'
+                      : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                  }`}
+                  style={selectedDiscipline === d.id ? {backgroundColor: `${d.hex}15`, borderColor: `${d.hex}50`, color: d.hex} : {}}
+                >
+                  <d.icon className="w-4 h-4" />
+                  {d.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-6">
+              {filteredDisciplines.map(discipline => (
+                <div key={discipline.id} className="bg-zinc-900/30 border border-zinc-800 rounded-xl overflow-hidden">
+                  <div className="p-4 border-b border-zinc-800 flex items-center gap-3" style={{backgroundColor: `${discipline.hex}08`}}>
+                    <discipline.icon className="w-5 h-5" style={{color: discipline.hex}} />
+                    <h3 className="font-semibold text-lg" style={{color: discipline.hex}}>{discipline.name}</h3>
+                    <span className="text-xs text-zinc-500">{discipline.models.length} models</span>
+                  </div>
+                  <div className="divide-y divide-zinc-800">
+                    {discipline.models.map((model, idx) => (
+                      <div key={idx} className="p-5 hover:bg-zinc-900/50 transition-colors">
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="text-xs text-zinc-600 font-mono mt-1">{String(idx+1).padStart(2, '0')}</div>
+                          <div className="flex-1">
+                            <div className="font-semibold text-zinc-100 mb-1">{model.name}</div>
+                            <div className="text-sm text-zinc-400 mb-3 leading-relaxed">{model.desc}</div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                              <div className="p-3 bg-cyan-500/5 border border-cyan-500/15 rounded">
+                                <div className="text-cyan-400 font-medium mb-1 tracking-wider">반도체</div>
+                                <div className="text-zinc-300 leading-relaxed">{model.semi}</div>
+                              </div>
+                              <div className="p-3 bg-amber-500/5 border border-amber-500/15 rounded">
+                                <div className="text-amber-400 font-medium mb-1 tracking-wider">투자</div>
+                                <div className="text-zinc-300 leading-relaxed">{model.invest}</div>
+                              </div>
+                              <div className="p-3 bg-emerald-500/5 border border-emerald-500/15 rounded">
+                                <div className="text-emerald-400 font-medium mb-1 tracking-wider">학원</div>
+                                <div className="text-zinc-300 leading-relaxed">{model.edu}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 12주 플랜 탭 */}
+        {activeTab === 'plan' && (
+          <div>
+            {/* 페이즈 타임라인 */}
+            <div className="mb-6 p-5 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+              <h3 className="text-sm text-zinc-400 mb-4 tracking-widest">PHASE TIMELINE</h3>
+              <div className="flex flex-wrap gap-2">
+                {phases.map(p => (
+                  <div key={p.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border" style={{backgroundColor: `${p.color}10`, borderColor: `${p.color}30`}}>
+                    <div className="w-2 h-2 rounded-full" style={{backgroundColor: p.color}} />
+                    <span className="text-sm font-medium" style={{color: p.color}}>{p.label}</span>
+                    <span className="text-xs text-zinc-500">W{p.weeks.join(',')}</span>
+                    <span className="text-xs text-zinc-400">· {p.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 주차별 카드 */}
+            <div className="space-y-3">
+              {trainingPlan.map(week => {
+                const phase = phases.find(p => p.id === week.phase);
+                const isChecked = checkedWeeks[week.week];
+                return (
+                  <div 
+                    key={week.week}
+                    className={`bg-zinc-900/30 border rounded-xl overflow-hidden transition-all ${
+                      isChecked ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-zinc-800'
+                    }`}
+                  >
+                    <div className="p-5">
+                      <div className="flex items-start gap-4">
+                        <button 
+                          onClick={() => toggleWeek(week.week)}
+                          className="mt-1 flex-shrink-0"
+                        >
+                          {isChecked ? (
+                            <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                          ) : (
+                            <Circle className="w-6 h-6 text-zinc-600 hover:text-zinc-400 transition-colors" />
+                          )}
+                        </button>
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center gap-3 mb-3">
+                            <span className="text-xs font-mono px-2 py-1 bg-zinc-800 rounded text-zinc-400">Week {String(week.week).padStart(2,'0')}</span>
+                            <span 
+                              className="text-xs px-2 py-1 rounded font-medium" 
+                              style={{backgroundColor: `${phase.color}15`, color: phase.color}}
+                            >
+                              {week.phase}
+                            </span>
+                            <h4 className={`font-semibold ${isChecked ? 'text-emerald-300 line-through decoration-emerald-500/40' : 'text-zinc-100'}`}>
+                              {week.title}
+                            </h4>
+                          </div>
+                          <ul className="space-y-1.5 mb-3 ml-1">
+                            {week.tasks.map((task, i) => (
+                              <li key={i} className="text-sm text-zinc-400 flex items-start gap-2">
+                                <ArrowRight className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-zinc-600" />
+                                <span>{task}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <div className="text-xs text-zinc-500 flex items-center gap-2 pt-2 border-t border-zinc-800">
+                            <Target className="w-3.5 h-3.5" />
+                            <span className="text-zinc-400">산출물:</span>
+                            <span className="text-amber-300/80">{week.deliverable}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 핵심 도구 탭 */}
+        {activeTab === 'tools' && (
+          <div className="space-y-6">
+            <div className="p-6 bg-gradient-to-br from-amber-500/10 to-rose-500/5 border border-amber-500/30 rounded-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <RefreshCw className="w-6 h-6 text-amber-400" />
+                <h3 className="text-xl font-semibold text-amber-300">Invert, Always Invert</h3>
+              </div>
+              <p className="text-zinc-300 leading-relaxed mb-4">
+                멍거가 야코비에게서 빌려온 격자틀의 핵심 무기. 모든 문제를 정방향이 아닌 <span className="text-amber-300 font-medium">"어떻게 하면 확실히 망할까"</span>로 먼저 풀어보세요.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-lg">
+                  <div className="text-xs text-cyan-400 mb-2 tracking-widest">ASML 투자</div>
+                  <div className="text-sm text-zinc-400">정방향: "ASML이 10년 뒤 어떻게 성공할까?"</div>
+                  <div className="text-sm text-amber-300 mt-2">↓ 역방향</div>
+                  <div className="text-sm text-zinc-200 mt-1">"ASML이 10년 뒤 실패한다면 그 이유는 무엇일까? 그 시나리오들 각각에 대비책이 있는가?"</div>
+                </div>
+                <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-lg">
+                  <div className="text-xs text-emerald-400 mb-2 tracking-widest">학원 운영</div>
+                  <div className="text-sm text-zinc-400">정방향: "어떻게 학원을 키울까?"</div>
+                  <div className="text-sm text-amber-300 mt-2">↓ 역방향</div>
+                  <div className="text-sm text-zinc-200 mt-1">"학부모가 절대 등록 안 하게 만드는 10가지 방법은? 그것을 모두 제거하면?"</div>
+                </div>
+                <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-lg">
+                  <div className="text-xs text-violet-400 mb-2 tracking-widest">챗봇 UX</div>
+                  <div className="text-sm text-zinc-400">정방향: "최고의 응답은?"</div>
+                  <div className="text-sm text-amber-300 mt-2">↓ 역방향</div>
+                  <div className="text-sm text-zinc-200 mt-1">"학부모를 가장 화나게 할 응답 패턴 10개는? 챗봇이 그것을 절대 하지 않도록 어떻게 설계?"</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <BookOpen className="w-6 h-6 text-cyan-400" />
+                <h3 className="text-xl font-semibold text-cyan-300">의사결정 일지 템플릿</h3>
+              </div>
+              <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-5 font-mono text-sm space-y-3">
+                <div><span className="text-zinc-500">날짜:</span> <span className="text-zinc-300">2026-05-13</span></div>
+                <div><span className="text-zinc-500">결정 사안:</span> <span className="text-zinc-300">ASML 추가 매수 여부</span></div>
+                <div><span className="text-zinc-500">적용 모델 (3개 이상):</span></div>
+                <div className="pl-4 text-zinc-400">
+                  <div>· 경제학: 기회비용 — 다른 종목 대비 IRR</div>
+                  <div>· 생물학: 생태적 지위 — EUV 독점 지속성</div>
+                  <div>· 심리학: 확증편향 점검 — 반대 의견 3개 찾았나?</div>
+                </div>
+                <div><span className="text-zinc-500">반대 시나리오 (Invert):</span></div>
+                <div className="pl-4 text-zinc-400">
+                  <div>· 중국 SMEE 약진? — 5년 내 가능성 낮음</div>
+                  <div>· EUV 대체 기술 등장? — High-NA 다음 세대도 ASML 우위</div>
+                </div>
+                <div><span className="text-zinc-500">자신감:</span> <span className="text-emerald-400">7/10</span></div>
+                <div><span className="text-zinc-500">예상 결과 (6개월 후):</span> <span className="text-zinc-300">+15~25%</span></div>
+                <div className="pt-3 border-t border-zinc-800"><span className="text-zinc-500">[6개월 후 복기]</span></div>
+                <div className="pl-4 text-zinc-500 italic">실제 결과 / 적중·빗나간 모델 / 작동한 편향 기록</div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <Users className="w-6 h-6 text-rose-400" />
+                <h3 className="text-xl font-semibold text-rose-300">교차 학문 강제 적용 워크시트</h3>
+              </div>
+              <p className="text-sm text-zinc-400 mb-4">매 분석마다 최소 3개 학문 렌즈를 의무화. 처음엔 어색해도 3개월이면 자동화됩니다.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800">
+                      <th className="text-left py-3 text-zinc-500 font-normal">대상</th>
+                      <th className="text-left py-3 text-cyan-400 font-normal">물리·공학</th>
+                      <th className="text-left py-3 text-emerald-400 font-normal">생물·진화</th>
+                      <th className="text-left py-3 text-rose-400 font-normal">심리</th>
+                      <th className="text-left py-3 text-amber-400 font-normal">경제·수학</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-zinc-400">
+                    <tr className="border-b border-zinc-800/50">
+                      <td className="py-3 pr-3 text-zinc-200">HBM 경쟁</td>
+                      <td className="py-3 pr-3">상전이 — TSV 적층 한계</td>
+                      <td className="py-3 pr-3">생태적 지위 분화</td>
+                      <td className="py-3 pr-3">앵커링 — 1세대 가격</td>
+                      <td className="py-3 pr-3">규모의 경제</td>
+                    </tr>
+                    <tr className="border-b border-zinc-800/50">
+                      <td className="py-3 pr-3 text-zinc-200">학원 입소문</td>
+                      <td className="py-3 pr-3">되먹임 루프</td>
+                      <td className="py-3 pr-3">밈 전파 모델</td>
+                      <td className="py-3 pr-3">사회적 증거</td>
+                      <td className="py-3 pr-3">복리 효과</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 pr-3 text-zinc-200">TSMC 해자</td>
+                      <td className="py-3 pr-3">관성 — 고객 락인</td>
+                      <td className="py-3 pr-3">공진화 — 고객사들</td>
+                      <td className="py-3 pr-3">전환비용 편향</td>
+                      <td className="py-3 pr-3">규모·범위의 경제</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 추천 도서 탭 */}
+        {activeTab === 'books' && (
+          <div className="space-y-3">
+            {[1,2,3].map(priority => (
+              <div key={priority}>
+                <div className="flex items-center gap-2 mb-3 mt-4 first:mt-0">
+                  <div className={`w-1 h-6 rounded-full ${priority === 1 ? 'bg-amber-400' : priority === 2 ? 'bg-cyan-400' : 'bg-zinc-600'}`} />
+                  <h3 className="text-sm tracking-widest text-zinc-400">
+                    {priority === 1 ? 'TIER 1 · 필수 정독' : priority === 2 ? 'TIER 2 · 핵심 보조' : 'TIER 3 · 확장 독서'}
+                  </h3>
+                </div>
+                {books.filter(b => b.priority === priority).map((book, i) => (
+                  <div key={i} className="p-5 bg-zinc-900/30 border border-zinc-800 rounded-xl mb-2 hover:bg-zinc-900/50 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-3 mb-1">
+                          <h4 className="font-semibold text-zinc-100">{book.title}</h4>
+                          <span className="text-xs text-zinc-500">{book.author}</span>
+                        </div>
+                        <p className="text-sm text-zinc-400 leading-relaxed">{book.why}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-zinc-700 mt-1 flex-shrink-0" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+            
+            <div className="mt-6 p-5 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+              <p className="text-sm text-zinc-300 leading-relaxed">
+                <span className="text-amber-300 font-medium">독서 전략:</span> Tier 1 세 권은 12주 동안 <span className="text-amber-300">반복 정독</span>. 
+                특히 <span className="italic">Psychology of Human Misjudgment</span>은 분기당 1회 재독 권장. 
+                Tier 2/3는 한 권 끝낼 때마다 <span className="text-amber-300">자기 도메인 사례 5개 발굴 의무화</span>.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 푸터 */}
+        <div className="mt-12 pt-6 border-t border-zinc-800 text-center">
+          <p className="text-xs text-zinc-600 tracking-widest">
+            "TAKE A SIMPLE IDEA AND TAKE IT SERIOUSLY." — CHARLIE MUNGER (1924–2023)
+          </p>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+export default MungerLatticework;

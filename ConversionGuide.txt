@@ -1,0 +1,96 @@
+JSX to HTML 변환 진행 상황
+===========================
+
+✓ 완료된 파일 (3개):
+1. InterferometerComparison.html - Recharts 차트 완전 포함
+2. mindmap_insurance-comparison.html - 완전 변환, 모든 탭 작동
+3. mindmap_MungerLatticework.html - 완전 변환, 인터랙티브 UI
+
+📋 남은 파일 (5개):
+4. mindmap_ClaudeTrendsDashboard.jsx (934 줄)
+   - 필요한 라이브러리: Recharts (5개 차트 타입), lucide-react (18개 아이콘)
+   - 주요 기능: 탭 네비게이션, 필터링, 산점도 차트, 기술 매트릭스
+   - 상태: 아이콘 처리 필요
+
+5. mindmap_asml_moat_dashboard.jsx (895 줄)
+   - 필요한 라이브러리: Recharts (여러 차트)
+   - 주요 기능: 파이차트, 막대그래프, 레이더 차트, 테이블
+   - 상태: 복잡한 분석 대시보드
+
+6. mindmap_GratingEncoderDeepDive.jsx (1043 줄)
+   - 필요한 라이브러리: Recharts, SVG 애니메이션
+   - 주요 기능: 격자 인코더 기술 설명, 상호작용형 다이어그램
+   - 상태: 가장 긴 파일
+
+7. mindmap_HeterodyneDeepDive.jsx (713 줄)
+   - 필요한 라이브러리: Recharts
+   - 주요 기능: 이질주파 간섭계 설명, 신호 분석
+   - 상태: 기술 설명 중심
+
+8. mindmap_tsmc_moat_dashboard.jsx (918 줄)
+   - 필요한 라이브러리: Recharts (복합 차트)
+   - 주요 기능: 수익 추세, 시장 점유율, 기술 로드맵
+   - 상태: 복잡한 데이터 분석
+
+===== 변환 방법 =====
+
+각 파일을 다음 구조로 변환:
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>[제목]</title>
+
+  <!-- 필요한 CDN 라이브러리 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.10.0/dist/Recharts.js"></script>
+
+  <!-- 아이콘 처리: lucide-react 제거하고 텍스트/이모지로 대체 -->
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    [JSX 코드]
+
+    // 마지막 줄:
+    ReactDOM.createRoot(document.getElementById('root')).render(<ComponentName />);
+  </script>
+</body>
+</html>
+
+===== lucide-react 아이콘 대체 방안 =====
+
+lucide-react 아이콘은 다음 중 하나로 대체:
+1. Emoji (이모지) - 가장 간단함
+2. Unicode 기호 - 간단한 아이콘용
+3. SVG inline - 정확한 렌더링 필요시
+4. 텍스트 레이블 - 간단하고 효과적
+
+예시:
+- Sparkles → ✨ 또는 "⭐"
+- Code2 → "📝" 또는 "💻"
+- Brain → "🧠"
+- Briefcase → "💼"
+- Users → "👥"
+- AlertTriangle → "⚠️"
+- CheckCircle2 → "✅"
+
+===== 다음 단계 =====
+
+1. 각 JSX 파일을 읽고 export default 함수명 확인
+2. 함수명에 맞게 ReactDOM.createRoot 마지막 줄 수정
+3. lucide-react import 제거 및 아이콘 대체
+4. 한 번에 하나씩 HTML 파일로 변환
+5. 웹브라우저에서 테스트 (모든 차트 렌더링 확인)
+
+===== 예상 소요 시간 =====
+
+- 각 파일당: 15-20분
+- 총 5개 파일: 75-100분
+- 테스트 및 디버그: 30분
+- 합계: 약 2시간
